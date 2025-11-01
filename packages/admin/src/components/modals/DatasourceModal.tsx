@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Button } from '../ui/button'
 
+/**
+ * Config structure baseado no tipo do datasource:
+ * 
+ * rest_api: { baseUrl, method, headers, auth, body, queryParams, responsePath }
+ * mongodb: { connectionString, database, collection, query, projection }
+ * sql: { engine, host, port, database, username, password, query, ssl }
+ * static: { options }
+ */
 interface Datasource {
   _id?: string
   projectKey: string
@@ -131,15 +139,21 @@ export function DatasourceModal({
     return schema
   }
   
-  // Headers
-  const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>(
-    Object.entries(datasource?.config.headers || {}).map(([key, value]) => ({ key, value: String(value) }))
-  )
+  // Headers (apenas para REST API)
+  const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>(() => {
+    if (datasource && datasource.type === 'rest_api') {
+      return Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value: String(value) }))
+    }
+    return []
+  })
   
-  // Query Params
-  const [queryParams, setQueryParams] = useState<Array<{ key: string; value: string }>>(
-    Object.entries(datasource?.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) }))
-  )
+  // Query Params (apenas para REST API)
+  const [queryParams, setQueryParams] = useState<Array<{ key: string; value: string }>>(() => {
+    if (datasource && datasource.type === 'rest_api') {
+      return Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) }))
+    }
+    return []
+  })
 
   // Atualiza o formulário quando o datasource mudar
   useEffect(() => {
@@ -160,8 +174,10 @@ export function DatasourceModal({
           valueField: 'id'
         }
       })
-      setHeaders(Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value: String(value) })))
-      setQueryParams(Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) })))
+      if (datasource.type === 'rest_api') {
+        setHeaders(Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value: String(value) })))
+        setQueryParams(Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) })))
+      }
     } else {
       setFormData({
         projectKey,
@@ -236,6 +252,14 @@ export function DatasourceModal({
     setTestResult(null)
 
     try {
+      if (formData.type !== 'rest_api') {
+        setTestResult({ success: false, error: 'Teste de conexão só disponível para REST API' })
+        setIsTesting(false)
+        return
+      }
+
+      const config = formData.config
+
       // Construir headers
       const headersObj: Record<string, string> = {}
       headers.forEach(h => {
@@ -245,13 +269,13 @@ export function DatasourceModal({
       })
 
       // Adicionar autenticação aos headers
-      if (formData.config.auth?.type === 'bearer' && formData.config.auth.token) {
-        headersObj['Authorization'] = `Bearer ${formData.config.auth.token}`
-      } else if (formData.config.auth?.type === 'apikey' && formData.config.auth.apiKey) {
-        const headerName = formData.config.auth.apiKeyHeader || 'X-API-Key'
-        headersObj[headerName] = formData.config.auth.apiKey
-      } else if (formData.config.auth?.type === 'basic' && formData.config.auth.username && formData.config.auth.password) {
-        const credentials = btoa(`${formData.config.auth.username}:${formData.config.auth.password}`)
+      if (config.auth?.type === 'bearer' && config.auth.token) {
+        headersObj['Authorization'] = `Bearer ${config.auth.token}`
+      } else if (config.auth?.type === 'apikey' && config.auth.apiKey) {
+        const headerName = config.auth.apiKeyHeader || 'X-API-Key'
+        headersObj[headerName] = config.auth.apiKey
+      } else if (config.auth?.type === 'basic' && config.auth.username && config.auth.password) {
+        const credentials = btoa(`${config.auth.username}:${config.auth.password}`)
         headersObj['Authorization'] = `Basic ${credentials}`
       }
 
@@ -272,16 +296,16 @@ export function DatasourceModal({
       })
 
       const queryString = new URLSearchParams(paramsObj).toString()
-      const url = queryString ? `${formData.config.baseUrl}?${queryString}` : formData.config.baseUrl
+      const url = queryString ? `${config.baseUrl}?${queryString}` : config.baseUrl
 
       // Fazer requisição
       const options: RequestInit = {
-        method: formData.config.method || 'GET',
+        method: config.method || 'GET',
         headers: headersObj
       }
 
-      if (formData.config.body && (formData.config.method === 'POST' || formData.config.method === 'PUT')) {
-        options.body = formData.config.body
+      if (config.body && (config.method === 'POST' || config.method === 'PUT')) {
+        options.body = config.body
       }
 
       const response = await fetch(url!, options)
@@ -290,8 +314,8 @@ export function DatasourceModal({
       if (response.ok) {
         // Navegar pelo responsePath se especificado
         let resultData = data
-        if (formData.config.responsePath) {
-          const paths = formData.config.responsePath.split('.')
+        if (config.responsePath) {
+          const paths = config.responsePath.split('.')
           for (const path of paths) {
             if (resultData && typeof resultData === 'object') {
               resultData = resultData[path]
