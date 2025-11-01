@@ -60,24 +60,10 @@ export default async function (fastify: FastifyInstance) {
           datasourceId: datasource.id
         };
 
-        // Aplicar filtros de dependências de forma GENÉRICA usando mapeamento configurado
-        // Os query params contêm os valores dos filtros fonte (ex: ?country=BR)
-        // O mapeamento define qual campo usar no metadata (ex: city -> cities)
-        const metadataFieldMapping = datasource.syncConfig?.metadataFieldMapping || {};
+        // NOTA: Este endpoint está DEPRECATED em favor de /projects/:projectKey/filters/:filterSlug/options
+        // Mantido apenas para backward compatibility
+        // O novo endpoint suporta mapeamento genérico configurado no próprio filtro (Filter-level dependencies)
         
-        Object.entries(queryParams).forEach(([paramKey, paramValue]) => {
-          if (paramValue) {
-            // Verificar se há um mapeamento configurado para este campo
-            // Se sim, usar o campo mapeado. Se não, usar o próprio paramKey
-            const metadataField = metadataFieldMapping[paramKey] || paramKey;
-            
-            // MongoDB automaticamente busca dentro de arrays se o campo for um array
-            filters[`metadata.${metadataField}`] = paramValue;
-            
-            console.log(`🗺️  Mapping: ?${paramKey}=${paramValue} → metadata.${metadataField}`);
-          }
-        });
-
         console.log('🔍 Querying datasourcedata with filters:', filters);
 
         const data = await DatasourceData.find(filters).lean();

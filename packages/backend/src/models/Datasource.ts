@@ -19,11 +19,7 @@ const DatasourceSchema = new mongoose.Schema({
     interval: { type: String, default: '1h' }, // 5m, 15m, 1h, 6h, 24h
     externalCodeField: { type: String }, // Campo que identifica o registro na API externa
     labelField: { type: String, default: 'label' },
-    valueField: { type: String, default: 'value' },
-    // Mapeamento de campos para queries de dependências
-    // Exemplo: { city: 'cities', category: 'categories' }
-    // Quando receber ?city=X, buscar em metadata.cities
-    metadataFieldMapping: { type: mongoose.Schema.Types.Mixed, default: {} }
+    valueField: { type: String, default: 'value' }
   },
   
   // Metadados de sincronização

@@ -31,7 +31,6 @@ interface Datasource {
     externalCodeField?: string
     labelField?: string
     valueField?: string
-    metadataFieldMapping?: Record<string, string>
   }
   lastSync?: {
     date: string | Date
@@ -60,7 +59,6 @@ interface DatasourceFormData {
     externalCodeField?: string
     labelField?: string
     valueField?: string
-    metadataFieldMapping?: Record<string, string>
   }
 }
 
