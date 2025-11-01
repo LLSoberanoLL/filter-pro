@@ -1,0 +1,21 @@
+{
+  "name": "filter-pro-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev:backend": "pnpm --filter @filter-pro/backend dev",
+    "dev:admin": "pnpm --filter @filter-pro/admin dev",
+    "dev:filter": "pnpm --filter @filter-pro/filter-pro dev",
+    "dev:test": "npx serve . -p 8000",
+    "dev:all": "concurrently \"pnpm dev:admin\" \"pnpm dev:filter\" \"pnpm dev:test\"",
+    "seed": "pnpm --filter @filter-pro/backend run seed",
+    "start:backend": "pnpm --filter @filter-pro/backend start",
+    "build": "pnpm -w -r build",
+    "test": "pnpm -w -r test"
+  },
+  "devDependencies": {
+    "pnpm": "^8.0.0",
+    "concurrently": "^8.2.2",
+    "serve": "^14.2.1"
+  }
+}

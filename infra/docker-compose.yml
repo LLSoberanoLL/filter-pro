@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: filterpro
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - 27017:27017
+
+  backend:
+    build: ../packages/backend
+    working_dir: /app
+    command: pnpm dev
+    environment:
+      MONGO_URI: mongodb://mongo:27017/filterpro
+      PORT: 4000
+      JWT_SECRET: change_this_secret
+    volumes:
+      - ../packages/backend:/app
+      - /app/node_modules
+    ports:
+      - 4000:4000
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:

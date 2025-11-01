@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilterPro - Exemplo de Integração</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .demo-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .demo-section h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .result-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .result-box h3 {
+            margin-top: 0;
+            color: #495057;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        
+        pre {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            overflow-x: auto;
+            font-size: 13px;
+            margin: 0;
+            color: #333;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .code-example {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .code-example h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        @media (max-width: 768px) {
+            .results {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 FilterPro</h1>
+            <p>Web Component para filtros dinâmicos - Demonstração em HTML puro</p>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Demonstração do Componente</h2>
+            <p>O componente abaixo carrega os filtros do projeto "demo-project" e permite interação em tempo real:</p>
+            
+            <!-- FilterPro Web Component -->
+            <filter-pro 
+                api-url="http://localhost:4000"
+                project-key="demo-project"
+                id="demo-filter">
+            </filter-pro>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Resultados em Tempo Real</h2>
+            
+            <div class="results">
+                <div class="result-box">
+                    <h3>📋 Valores dos Filtros</h3>
+                    <pre id="filter-values">Aguardando interação com os filtros...</pre>
+                </div>
+                
+                <div class="result-box">
+                    <h3>🔍 Query MongoDB Gerada</h3>
+                    <pre id="mongodb-query">Aguardando interação com os filtros...</pre>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Como Integrar em Seu Projeto</h2>
+            
+            <div class="code-example">
+                <h4>1. Instalação via NPM</h4>
+                <pre>npm install @filterpro/filter-pro</pre>
+            </div>
+            
+            <div class="code-example">
+                <h4>2. Importação no JavaScript</h4>
+                <pre>import '@filterpro/filter-pro';</pre>
+            </div>
+            
+            <div class="code-example">
+                <h4>3. Uso no HTML</h4>
+                <pre>&lt;filter-pro 
+  api-url="http://localhost:4000"
+  project-key="seu-projeto"&gt;
+&lt;/filter-pro&gt;</pre>
+            </div>
+            
+            <div class="code-example">
+                <h4>4. Captura de Eventos</h4>
+                <pre>document.querySelector('filter-pro').addEventListener('filter-change', (event) => {
+  const { filters, query } = event.detail;
+  console.log('Filtros:', filters);
+  console.log('Query:', query);
+});</pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Frameworks Suportados</h2>
+            <p>Este Web Component funciona com qualquer framework ou biblioteca JavaScript:</p>
+            <ul>
+                <li><strong>Angular</strong> - Configure CUSTOM_ELEMENTS_SCHEMA</li>
+                <li><strong>React</strong> - Use useRef e addEventListener</li>
+                <li><strong>Vue.js</strong> - Importe e use diretamente no template</li>
+                <li><strong>Vanilla JS</strong> - Como demonstrado nesta página</li>
+                <li><strong>Svelte</strong> - Importe no script section</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Importar o Web Component -->
+    <script type="module" src="http://localhost:5173/src/filter-pro.ts"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterComponent = document.getElementById('demo-filter');
+            const filterValuesElement = document.getElementById('filter-values');
+            const mongoQueryElement = document.getElementById('mongodb-query');
+            
+            if (!filterComponent) {
+                console.error('FilterPro component not found');
+                return;
+            }
+            
+            // Escutar mudanças nos filtros
+            filterComponent.addEventListener('filter-change', (event) => {
+                const { filters, query } = event.detail;
+                
+                // Atualizar display dos valores dos filtros
+                filterValuesElement.textContent = JSON.stringify(filters, null, 2);
+                
+                // Atualizar display da query MongoDB
+                if (query && query.query) {
+                    mongoQueryElement.textContent = JSON.stringify(query.query, null, 2);
+                } else {
+                    mongoQueryElement.textContent = 'Query não gerada';
+                }
+                
+                // Log para debug
+                console.log('🎯 FilterPro Event:', { filters, query });
+                
+                // Aqui você pode fazer chamadas para sua API usando os filtros
+                // Exemplo:
+                // fetchDataWithFilters(filters);
+                // updateTableWithQuery(query.query);
+            });
+            
+            // Exemplo de como definir valores iniciais
+            // filterComponent.setAttribute('initial-values', JSON.stringify({
+            //     country: 'BR',
+            //     date_range: {
+            //         from: '2024-01-01',
+            //         to: '2024-12-31'
+            //     }
+            // }));
+        });
+        
+        // Exemplo de função que usaria os filtros
+        function fetchDataWithFilters(filters) {
+            console.log('Buscando dados com filtros:', filters);
+            
+            // Exemplo de uso real:
+            // fetch('/api/data', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ filters })
+            // })
+            // .then(response => response.json())
+            // .then(data => updateUI(data));
+        }
+        
+        // Exemplo de função que usaria a query MongoDB
+        function updateTableWithQuery(mongoQuery) {
+            console.log('Atualizando tabela com query:', mongoQuery);
+            
+            // Exemplo de uso real:
+            // - Aplicar filtros em uma tabela local
+            // - Enviar query para backend que usa MongoDB
+            // - Atualizar gráficos ou visualizações
+        }
+    </script>
+</body>
+</html>

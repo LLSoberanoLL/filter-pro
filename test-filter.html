@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste FilterPro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .status-badge.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .filter-section {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .filter-section h2 {
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .results-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .result-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .result-box h3 {
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            font-family: 'Monaco', 'Consolas', monospace;
+            margin: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .instructions h4 {
+            margin: 0 0 10px 0;
+            color: #0066cc;
+        }
+
+        .instructions ol {
+            margin: 10px 0 0 20px;
+            color: #555;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .json-key {
+            color: #0066cc;
+            font-weight: 600;
+        }
+
+        .json-string {
+            color: #008800;
+        }
+
+        .json-number {
+            color: #cc6600;
+        }
+
+        .json-boolean {
+            color: #cc0066;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 FilterPro - Teste ao Vivo</h1>
+            <p>Teste o Web Component com filtros reais</p>
+            <div id="connection-status" class="status-badge disconnected">Verificando conexão...</div>
+        </div>
+
+        <div class="instructions">
+            <h4>📋 Como usar - Passo a Passo:</h4>
+            <ol>
+                <li>✅ <strong>Backend rodando?</strong> Veja o status acima. Se não: <code>cd infra && docker-compose up</code></li>
+                <li>🎨 <strong>Filter-Pro dev server</strong>: Execute <code>cd packages/filter-pro && pnpm dev</code> (porta 5173 ou 5174)</li>
+                <li>🎯 <strong>Crie o projeto de teste</strong>: Acesse <a href="http://localhost:3001" target="_blank">http://localhost:3001</a> e crie um projeto com a chave <strong>"demo-project"</strong></li>
+                <li>🎛️ <strong>Adicione filtros</strong>: No projeto "demo-project", crie alguns filtros (tipo: select, range, text)</li>
+                <li>🔄 <strong>Recarregue esta página</strong> e os filtros aparecerão automaticamente!</li>
+                <li>✨ Interaja com os filtros e veja os resultados em tempo real nas caixas ao lado!</li>
+            </ol>
+            <p style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; color: #856404;">
+                <strong>💡 Dica:</strong> Se a porta 5173 estiver ocupada, o Vite usará 5174. Atualize o código abaixo se necessário!
+            </p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="filter-section z-10">
+                <h2>🎛️ Filtros</h2>
+                <div id="component-status" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.85rem; display: none;">
+                    <strong>Status:</strong> <span id="status-text">Carregando...</span>
+                </div>
+                <div id="filter-container">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Carregando filtros...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="result-box">
+                    <h3>📊 Valores Selecionados</h3>
+                    <div id="filter-values">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <p>Selecione os filtros para ver os valores aqui</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-box">
+                    <h3>🔧 Query MongoDB</h3>
+                    <div id="mongodb-query">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚙️</div>
+                            <p>A query MongoDB será gerada automaticamente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-box">
+                    <h3>📝 Event Detail Completo</h3>
+                    <div id="event-detail">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>Todos os dados do evento serão exibidos aqui</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Verificar conexão com o backend
+        async function checkConnection() {
+            const statusBadge = document.getElementById('connection-status');
+            try {
+                // Testar endpoint correto (sem /api)
+                const response = await fetch('http://localhost:4000/projects/demo-project/filters');
+                console.log('Connection test response:', response.status);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Filters found:', data.length);
+                    statusBadge.textContent = `✅ Backend Conectado (${data.length} filtros encontrados)`;
+                    statusBadge.className = 'status-badge connected';
+                    return true;
+                } else {
+                    console.error('Connection test failed:', response.status, response.statusText);
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                statusBadge.textContent = '❌ Backend Offline';
+                statusBadge.className = 'status-badge disconnected';
+            }
+            return false;
+        }
+
+        // Atualizar status
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('component-status');
+            const statusText = document.getElementById('status-text');
+            statusDiv.style.display = 'block';
+            statusText.textContent = message;
+            
+            const colors = {
+                'info': '#0066cc',
+                'success': '#28a745',
+                'error': '#dc3545',
+                'warning': '#ffc107'
+            };
+            
+            statusDiv.style.borderLeft = `4px solid ${colors[type]}`;
+            statusDiv.style.color = colors[type];
+        }
+
+        // Carregar o Web Component
+        async function loadFilterComponent() {
+            const filterContainer = document.getElementById('filter-container');
+            
+            updateStatus('🔍 Procurando servidor do FilterPro...', 'info');
+            
+            // Tentar diferentes portas
+            const ports = [5174, 5173];
+            let componentLoaded = false;
+            
+            for (const port of ports) {
+                try {
+                    updateStatus(`Tentando porta ${port}...`, 'info');
+                    console.log(`Tentando carregar FilterPro da porta ${port}...`);
+                    
+                    // Importar o componente do servidor dev
+                    await import(`http://localhost:${port}/src/filter-pro.ts`);
+                    console.log(`✅ FilterPro carregado com sucesso da porta ${port}!`);
+                    
+                    updateStatus(`✅ Componente carregado da porta ${port}`, 'success');
+                    componentLoaded = true;
+                    
+                    // Criar o elemento via JavaScript
+                    filterContainer.innerHTML = '';
+                    const filterElement = document.createElement('filter-pro');
+                    filterElement.id = 'demo-filter';
+                    
+                    // Setar propriedades diretamente (não atributos)
+                    filterElement.apiUrl = 'http://localhost:4000';
+                    filterElement.projectKey = 'demo-project';
+                    
+                    filterContainer.appendChild(filterElement);
+
+                    console.log('FilterPro element created in DOM');
+                    console.log('FilterPro properties:', {
+                        apiUrl: filterElement.apiUrl,
+                        projectKey: filterElement.projectKey
+                    });
+                    updateStatus('⏳ Montando componente...', 'info');
+
+                    // Aguardar um pouco para o componente ser montado
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    const element = document.getElementById('demo-filter');
+                    console.log('FilterPro element:', element);
+                    console.log('FilterPro shadowRoot:', element?.shadowRoot);
+                    
+                    if (element && element.shadowRoot) {
+                        updateStatus('✅ Filtros carregados! Interaja com eles.', 'success');
+                    } else {
+                        updateStatus('⚠️ Componente montado, aguardando renderização...', 'warning');
+                    }
+
+                    // Configurar listeners
+                    setupFilterListeners();
+                    
+                    // Verificar se há filtros após 2 segundos
+                    setTimeout(() => {
+                        const hasContent = element?.shadowRoot?.querySelector('*');
+                        if (!hasContent) {
+                            updateStatus('ℹ️ Nenhum filtro encontrado. Crie filtros no admin!', 'warning');
+                            filterContainer.innerHTML += `
+                                <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 0.9rem;">
+                                    <strong>💡 Como adicionar filtros:</strong>
+                                    <ol style="margin: 10px 0 0 20px; line-height: 1.8;">
+                                        <li>Acesse <a href="http://localhost:3001" target="_blank">http://localhost:3001</a></li>
+                                        <li>Faça login no admin</li>
+                                        <li>Crie um projeto com a chave <strong>"demo-project"</strong></li>
+                                        <li>Adicione filtros ao projeto</li>
+                                        <li>Recarregue esta página!</li>
+                                    </ol>
+                                </div>
+                            `;
+                        }
+                    }, 2000);
+                    
+                    break; // Sucesso, sair do loop
+                } catch (error) {
+                    console.warn(`Porta ${port} não disponível:`, error.message);
+                    if (port === ports[ports.length - 1]) {
+                        // Última tentativa falhou
+                        console.error('Erro ao carregar FilterPro de todas as portas:', error);
+                        updateStatus('❌ Servidor do FilterPro não encontrado', 'error');
+                        filterContainer.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">⚠️</div>
+                                <p><strong>Filter-Pro dev server não está rodando</strong></p>
+                                <p style="font-size: 0.9rem; margin-top: 10px;">
+                                    Execute este comando em outro terminal:<br>
+                                    <code style="background: #f5f5f5; padding: 5px 10px; display: inline-block; margin-top: 5px; border-radius: 4px;">
+                                        cd packages/filter-pro && pnpm dev
+                                    </code>
+                                </p>
+                                <p style="font-size: 0.9rem; margin-top: 10px; color: #666;">
+                                    Depois, recarregue esta página (F5)
+                                </p>
+                                <button onclick="location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                                    🔄 Recarregar Página
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            }
+        }
+
+        function setupFilterListeners() {
+            const filterComponent = document.getElementById('demo-filter');
+            const filterValuesElement = document.getElementById('filter-values');
+            const mongoQueryElement = document.getElementById('mongodb-query');
+            const eventDetailElement = document.getElementById('event-detail');
+            
+            if (!filterComponent) {
+                console.error('FilterPro component not found');
+                return;
+            }
+            
+            filterComponent.addEventListener('filter-change', (event) => {
+                console.log('🎯 FilterPro Event:', event.detail);
+                
+                const { filters, query } = event.detail;
+                
+                // Atualizar valores dos filtros
+                filterValuesElement.innerHTML = `<pre>${JSON.stringify(filters, null, 2)}</pre>`;
+                
+                // Atualizar query MongoDB
+                if (query && query.query) {
+                    mongoQueryElement.innerHTML = `<pre>${JSON.stringify(query.query, null, 2)}</pre>`;
+                } else {
+                    mongoQueryElement.innerHTML = `<pre>{ /* Nenhum filtro aplicado */ }</pre>`;
+                }
+
+                // Atualizar event detail completo
+                eventDetailElement.innerHTML = `<pre>${JSON.stringify(event.detail, null, 2)}</pre>`;
+            });
+
+            // Listener para erros
+            filterComponent.addEventListener('filter-error', (event) => {
+                console.error('❌ FilterPro Error:', event.detail);
+                filterValuesElement.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p><strong>Erro:</strong> ${event.detail.message}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isConnected = await checkConnection();
+            if (isConnected) {
+                await loadFilterComponent();
+            } else {
+                document.getElementById('filter-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔌</div>
+                        <p><strong>Backend não conectado</strong></p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">
+                            Inicie o backend com:<br>
+                            <code>docker-compose up</code>
+                        </p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
