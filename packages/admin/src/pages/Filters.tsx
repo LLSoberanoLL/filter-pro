@@ -13,8 +13,14 @@ interface Filter {
   active: boolean
   order: number
   dependencies: Array<{
-    sourceFilterId: string
-    type: 'restrictOptions' | 'conditionalShow'
+    filterSlug: string
+    mode: 'affects' | 'affected-by'
+    mapping: {
+      myField?: string
+      myMetadataField?: string
+      targetField?: string
+      targetMetadataField?: string
+    }
   }>
   optionsConfig?: {
     static?: Array<{ label: string; value: string }>
@@ -38,8 +44,14 @@ interface FilterFormData {
   active: boolean
   order: number
   dependencies: Array<{
-    sourceFilterId: string
-    type: 'restrictOptions' | 'conditionalShow'
+    filterSlug: string
+    mode: 'affects' | 'affected-by'
+    mapping: {
+      myField?: string
+      myMetadataField?: string
+      targetField?: string
+      targetMetadataField?: string
+    }
   }>
   optionsConfig?: {
     static?: Array<{ label: string; value: string }>
@@ -222,7 +234,7 @@ export function Filters() {
 
                 {filter.dependencies.length > 0 && (
                   <div className="text-sm text-gray-600 mb-2">
-                    Dependências: {filter.dependencies.map(dep => dep.sourceFilterId).join(', ')}
+                    Dependências: {filter.dependencies.map(dep => `${dep.filterSlug} (${dep.mode})`).join(', ')}
                   </div>
                 )}
 

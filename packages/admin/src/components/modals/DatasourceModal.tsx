@@ -7,22 +7,7 @@ interface Datasource {
   id: string
   name: string
   type: 'rest_api' | 'mongodb' | 'sql' | 'static'
-  config: {
-    baseUrl?: string
-    method?: string
-    headers?: Record<string, string>
-    auth?: {
-      type: 'none' | 'bearer' | 'basic' | 'apikey'
-      token?: string
-      username?: string
-      password?: string
-      apiKey?: string
-      apiKeyHeader?: string
-    }
-    body?: string
-    queryParams?: Record<string, string>
-    responsePath?: string
-  }
+  config: Record<string, any>
   sampleSchema?: Record<string, any>
   enabled?: boolean
   syncConfig?: {
@@ -148,12 +133,12 @@ export function DatasourceModal({
   
   // Headers
   const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>(
-    Object.entries(datasource?.config.headers || {}).map(([key, value]) => ({ key, value }))
+    Object.entries(datasource?.config.headers || {}).map(([key, value]) => ({ key, value: String(value) }))
   )
   
   // Query Params
   const [queryParams, setQueryParams] = useState<Array<{ key: string; value: string }>>(
-    Object.entries(datasource?.config.queryParams || {}).map(([key, value]) => ({ key, value }))
+    Object.entries(datasource?.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) }))
   )
 
   // Atualiza o formulário quando o datasource mudar
@@ -175,8 +160,8 @@ export function DatasourceModal({
           valueField: 'id'
         }
       })
-      setHeaders(Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value })))
-      setQueryParams(Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value })))
+      setHeaders(Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value: String(value) })))
+      setQueryParams(Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) })))
     } else {
       setFormData({
         projectKey,
