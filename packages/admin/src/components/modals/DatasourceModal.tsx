@@ -1,21 +1,62 @@
 import { useState, useEffect } from 'react'
 import { Button } from '../ui/button'
 
-/**
- * Config structure baseado no tipo do datasource:
- * 
- * rest_api: { baseUrl, method, headers, auth, body, queryParams, responsePath }
- * mongodb: { connectionString, database, collection, query, projection }
- * sql: { engine, host, port, database, username, password, query, ssl }
- * static: { options }
- */
+// ===== TIPOS DE CONFIG =====
+
+interface RestApiConfig {
+  baseUrl: string
+  method: string
+  headers?: Record<string, string>
+  auth?: {
+    type: 'bearer' | 'basic' | 'api_key'
+    token?: string
+    username?: string
+    password?: string
+    apiKey?: string
+    headerName?: string
+  }
+  body?: string
+  queryParams?: Record<string, string>
+  responsePath?: string
+}
+
+interface MongoDbConfig {
+  connectionString: string
+  database: string
+  collection: string
+  query?: string
+  projection?: string
+}
+
+interface SqlConfig {
+  engine: 'postgres' | 'mysql' | 'mssql'
+  host: string
+  port: number
+  database: string
+  username: string
+  password: string
+  query: string
+  ssl?: boolean
+}
+
+interface StaticConfig {
+  options: Array<{
+    value: string
+    label: string
+  }>
+}
+
+type DatasourceConfig = RestApiConfig | MongoDbConfig | SqlConfig | StaticConfig
+
+// ===== INTERFACES =====
+
 interface Datasource {
   _id?: string
   projectKey: string
   id: string
   name: string
   type: 'rest_api' | 'mongodb' | 'sql' | 'static'
-  config: Record<string, any>
+  config: DatasourceConfig
   sampleSchema?: Record<string, any>
   enabled?: boolean
   syncConfig?: {
