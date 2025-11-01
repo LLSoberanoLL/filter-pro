@@ -122,7 +122,12 @@ export default async function (fastify: FastifyInstance) {
               console.log('[FILTER-OPTIONS] Dados do filtro afetante:', affectingData);
 
               // Aplicar mapeamento da dependência
-              const { mapping } = dependency;
+              const mapping = dependency.mapping;
+              
+              if (!mapping) {
+                console.log('[FILTER-OPTIONS] Dependência sem mapeamento configurado');
+                continue;
+              }
 
               // Validação: usuário não pode preencher ambos os campos "my" e "target" simultaneamente
               const hasMyField = !!mapping.myField;
@@ -153,25 +158,35 @@ export default async function (fastify: FastifyInstance) {
 
               let targetValue: any;
               let queryKey: string;
+              let sourceDesc: string;
+              let targetDesc: string;
 
               // Determinar de onde vem o valor (target)
-              if (hasTargetField) {
-                targetValue = affectingData[mapping.targetField!];
+              if (hasTargetField && mapping.targetField) {
+                targetValue = (affectingData as any)[mapping.targetField];
+                sourceDesc = mapping.targetField;
+              } else if (mapping.targetMetadataField) {
+                targetValue = affectingData.metadata?.[mapping.targetMetadataField];
+                sourceDesc = `metadata.${mapping.targetMetadataField}`;
               } else {
-                targetValue = affectingData.metadata?.[mapping.targetMetadataField!];
+                console.log(`[FILTER-OPTIONS] Mapeamento de target inválido`);
+                continue;
               }
 
               // Determinar para onde vai o valor (my)
-              if (hasMyField) {
-                queryKey = mapping.myField!;
+              if (hasMyField && mapping.myField) {
+                queryKey = mapping.myField;
+                targetDesc = mapping.myField;
+              } else if (mapping.myMetadataField) {
+                queryKey = `metadata.${mapping.myMetadataField}`;
+                targetDesc = `metadata.${mapping.myMetadataField}`;
               } else {
-                queryKey = `metadata.${mapping.myMetadataField!}`;
+                console.log(`[FILTER-OPTIONS] Mapeamento de my inválido`);
+                continue;
               }
 
               if (targetValue !== undefined) {
                 query[queryKey] = targetValue;
-                const sourceDesc = hasTargetField ? `${mapping.targetField}` : `metadata.${mapping.targetMetadataField}`;
-                const targetDesc = hasMyField ? `${mapping.myField}` : `metadata.${mapping.myMetadataField}`;
                 console.log(`[FILTER-OPTIONS] Aplicando filtro: ${targetDesc} = ${JSON.stringify(targetValue)} (de ${sourceDesc})`);
               } else {
                 console.log(`[FILTER-OPTIONS] Valor não encontrado no filtro afetante para mapeamento`);

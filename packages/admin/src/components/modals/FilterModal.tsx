@@ -858,7 +858,6 @@ export function FilterModal({
                 {formData.dependencies.map((dep, index) => {
                   // Garantir que mapping sempre existe
                   const mapping = dep.mapping || { myField: '', myMetadataField: '', targetField: '', targetMetadataField: '' }
-                  const depWithMapping = { ...dep, mapping }
                   
                   return (
                   <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
@@ -905,7 +904,7 @@ export function FilterModal({
                       <p className="text-xs font-medium text-blue-900">Mapeamento de Campos:</p>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          <label className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                             Meu Campo (field)
                             <span 
                               className="cursor-help text-blue-500 hover:text-blue-700" 
@@ -923,7 +922,7 @@ export function FilterModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          <label className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                             Meu Metadata
                             <span 
                               className="cursor-help text-blue-500 hover:text-blue-700" 
@@ -941,7 +940,7 @@ export function FilterModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          <label className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                             Campo Target
                             <span 
                               className="cursor-help text-blue-500 hover:text-blue-700" 
@@ -959,7 +958,7 @@ export function FilterModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                          <label className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                             Metadata Target
                             <span 
                               className="cursor-help text-blue-500 hover:text-blue-700" 
