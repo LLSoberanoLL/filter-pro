@@ -905,7 +905,15 @@ export function FilterModal({
                       <p className="text-xs font-medium text-blue-900">Mapeamento de Campos:</p>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Meu Campo (field)</label>
+                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            Meu Campo (field)
+                            <span 
+                              className="cursor-help text-blue-500 hover:text-blue-700" 
+                              title="Campo direto DESTE filtro (ex: 'value'). Use quando quiser filtrar pelo valor principal. Pode ficar vazio se usar 'Meu Metadata'."
+                            >
+                              ⓘ
+                            </span>
+                          </label>
                           <input
                             type="text"
                             value={mapping.myField || ''}
@@ -915,7 +923,15 @@ export function FilterModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Meu Metadata</label>
+                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            Meu Metadata
+                            <span 
+                              className="cursor-help text-blue-500 hover:text-blue-700" 
+                              title="Campo dentro do metadata DESTE filtro (ex: 'country'). Use quando o filtro tiver informações extras. Pode ficar vazio se usar 'Meu Campo'."
+                            >
+                              ⓘ
+                            </span>
+                          </label>
                           <input
                             type="text"
                             value={mapping.myMetadataField || ''}
@@ -925,7 +941,15 @@ export function FilterModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Campo Target</label>
+                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            Campo Target
+                            <span 
+                              className="cursor-help text-blue-500 hover:text-blue-700" 
+                              title="Campo direto do filtro RELACIONADO (ex: 'value'). De onde vem o valor que vai filtrar este filtro. Pode ficar vazio se usar 'Metadata Target'."
+                            >
+                              ⓘ
+                            </span>
+                          </label>
                           <input
                             type="text"
                             value={mapping.targetField || ''}
@@ -935,7 +959,15 @@ export function FilterModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Metadata Target</label>
+                          <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            Metadata Target
+                            <span 
+                              className="cursor-help text-blue-500 hover:text-blue-700" 
+                              title="Campo dentro do metadata do filtro RELACIONADO (ex: 'cities'). De onde vem o valor adicional que vai filtrar este filtro. Pode ficar vazio se usar 'Campo Target'."
+                            >
+                              ⓘ
+                            </span>
+                          </label>
                           <input
                             type="text"
                             value={mapping.targetMetadataField || ''}
@@ -945,6 +977,46 @@ export function FilterModal({
                           />
                         </div>
                       </div>
+                      
+                      {/* Validação visual */}
+                      {(() => {
+                        const hasMyField = !!mapping.myField;
+                        const hasMyMetadata = !!mapping.myMetadataField;
+                        const hasTargetField = !!mapping.targetField;
+                        const hasTargetMetadata = !!mapping.targetMetadataField;
+                        
+                        const myFieldsCount = (hasMyField ? 1 : 0) + (hasMyMetadata ? 1 : 0);
+                        const targetFieldsCount = (hasTargetField ? 1 : 0) + (hasTargetMetadata ? 1 : 0);
+                        
+                        const isValid = myFieldsCount === 1 && targetFieldsCount === 1;
+                        
+                        if (!isValid) {
+                          return (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-300 rounded text-xs">
+                              <p className="font-medium text-red-900 mb-1">⚠️ Configuração inválida:</p>
+                              <ul className="text-red-800 list-disc list-inside space-y-1">
+                                {myFieldsCount === 0 && <li>Preencha <strong>exatamente UM</strong> campo "Meu" (Campo ou Metadata)</li>}
+                                {myFieldsCount > 1 && <li>Preencha <strong>apenas UM</strong> campo "Meu" (Campo <strong>OU</strong> Metadata, não ambos)</li>}
+                                {targetFieldsCount === 0 && <li>Preencha <strong>exatamente UM</strong> campo "Target" (Campo ou Metadata)</li>}
+                                {targetFieldsCount > 1 && <li>Preencha <strong>apenas UM</strong> campo "Target" (Campo <strong>OU</strong> Metadata, não ambos)</li>}
+                              </ul>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div className="mt-2 p-2 bg-green-50 border border-green-300 rounded text-xs">
+                            <p className="font-medium text-green-900 mb-1">✅ Configuração válida</p>
+                            <p className="text-green-800">
+                              {hasMyField && hasTargetField && `${mapping.myField} ← ${mapping.targetField}`}
+                              {hasMyField && hasTargetMetadata && `${mapping.myField} ← metadata.${mapping.targetMetadataField}`}
+                              {hasMyMetadata && hasTargetField && `metadata.${mapping.myMetadataField} ← ${mapping.targetField}`}
+                              {hasMyMetadata && hasTargetMetadata && `metadata.${mapping.myMetadataField} ← metadata.${mapping.targetMetadataField}`}
+                            </p>
+                          </div>
+                        );
+                      })()}
+
                       <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
                         <p className="font-medium text-blue-900 mb-1">💡 Exemplo de uso:</p>
                         <p className="text-blue-800">

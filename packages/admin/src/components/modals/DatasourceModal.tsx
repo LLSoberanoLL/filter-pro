@@ -101,8 +101,7 @@ export function DatasourceModal({
       interval: '1h',
       externalCodeField: 'id',
       labelField: 'name',
-      valueField: 'id',
-      metadataFieldMapping: {}
+      valueField: 'id'
     }
   })
 
@@ -201,8 +200,7 @@ export function DatasourceModal({
           interval: '1h',
           externalCodeField: 'id',
           labelField: 'name',
-          valueField: 'id',
-          metadataFieldMapping: {}
+          valueField: 'id'
         }
       })
       setHeaders([])
@@ -1224,107 +1222,6 @@ export function DatasourceModal({
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                           placeholder="id"
                         />
-                      </div>
-                    </div>
-
-                    {/* Mapeamento de Campos de Metadata */}
-                    <div className="pt-4 border-t border-purple-200">
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium mb-1">
-                          🔗 Mapeamento de Filtros Dependentes
-                        </label>
-                        <p className="text-xs text-gray-500 mb-2">
-                          Configure como parâmetros de filtros são mapeados para campos de metadata.
-                          Exemplo: quando um filtro envia <code className="bg-gray-100 px-1">?city=sao-paulo</code>,
-                          você pode mapear <code className="bg-gray-100 px-1">city → cities</code> para buscar em <code className="bg-gray-100 px-1">metadata.cities</code>
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {Object.entries(formData.syncConfig.metadataFieldMapping || {}).map(([key, value], index) => (
-                          <div key={index} className="flex gap-2 items-center">
-                            <input
-                              type="text"
-                              value={key}
-                              onChange={(e) => {
-                                const newMapping = { ...(formData.syncConfig?.metadataFieldMapping || {}) };
-                                delete newMapping[key];
-                                newMapping[e.target.value] = value;
-                                setFormData({
-                                  ...formData,
-                                  syncConfig: {
-                                    ...formData.syncConfig!,
-                                    metadataFieldMapping: newMapping
-                                  }
-                                });
-                              }}
-                              placeholder="Parâmetro (ex: city)"
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                            />
-                            <span className="text-gray-400">→</span>
-                            <input
-                              type="text"
-                              value={value}
-                              onChange={(e) => {
-                                const newMapping = { ...(formData.syncConfig?.metadataFieldMapping || {}) };
-                                newMapping[key] = e.target.value;
-                                setFormData({
-                                  ...formData,
-                                  syncConfig: {
-                                    ...formData.syncConfig!,
-                                    metadataFieldMapping: newMapping
-                                  }
-                                });
-                              }}
-                              placeholder="Campo metadata (ex: cities)"
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newMapping = { ...(formData.syncConfig?.metadataFieldMapping || {}) };
-                                delete newMapping[key];
-                                setFormData({
-                                  ...formData,
-                                  syncConfig: {
-                                    ...formData.syncConfig!,
-                                    metadataFieldMapping: newMapping
-                                  }
-                                });
-                              }}
-                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                        
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newMapping = { ...(formData.syncConfig?.metadataFieldMapping || {}) };
-                            newMapping[''] = '';
-                            setFormData({
-                              ...formData,
-                              syncConfig: {
-                                ...formData.syncConfig!,
-                                metadataFieldMapping: newMapping
-                              }
-                            });
-                          }}
-                          className="w-full px-3 py-2 border-2 border-dashed border-purple-300 text-purple-600 rounded-md hover:bg-purple-50 transition-colors text-sm font-medium"
-                        >
-                          + Adicionar Mapeamento
-                        </button>
-                      </div>
-
-                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs">
-                        <p className="font-medium text-blue-900 mb-1">💡 Como funciona:</p>
-                        <ul className="list-disc list-inside text-blue-800 space-y-1">
-                          <li>Parâmetro: nome do query param enviado pelo filtro dependente</li>
-                          <li>Campo metadata: nome do campo dentro de <code className="bg-blue-100 px-1">metadata</code> onde buscar</li>
-                          <li>Exemplo: <code className="bg-blue-100 px-1">city → cities</code> faz <code className="bg-blue-100 px-1">?city=sao-paulo</code> buscar em <code className="bg-blue-100 px-1">metadata.cities</code></li>
-                        </ul>
                       </div>
                     </div>
 
