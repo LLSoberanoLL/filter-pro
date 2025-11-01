@@ -57,15 +57,45 @@ fastify.register(mockCitiesRoutes);
 import mockCountriesRoutes from './routes/mock-countries';
 fastify.register(mockCountriesRoutes);
 
-// Datasource options route
+// Datasource routes
 import datasourceOptionsRoutes from './routes/datasource-options';
 fastify.register(datasourceOptionsRoutes);
+
+import datasourceSyncRoutes from './routes/datasource-sync';
+fastify.register(datasourceSyncRoutes);
+
+// Filter options with dependency resolution
+import filterOptionsRoutes from './routes/filter-options';
+fastify.register(filterOptionsRoutes);
+
+// Admin routes
+import adminRoutes from './routes/admin';
+fastify.register(adminRoutes);
+
+// Import cron service
+import { DatasourceCronService } from './services/DatasourceCronService';
 
 const start = async () => {
   try {
     await connectDb();
+    
+    // Initialize cron scheduler after DB connection
+    const cronService = DatasourceCronService.getInstance();
+    await cronService.initializeSchedules();
+    
     await fastify.listen({ port: Number(process.env.PORT || 4000), host: '0.0.0.0' });
     console.log(`Server listening on port ${process.env.PORT || 4000}`);
+    
+    // Graceful shutdown
+    const gracefulShutdown = async () => {
+      console.log('Shutting down gracefully...');
+      cronService.stopAll();
+      await fastify.close();
+      process.exit(0);
+    };
+    
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

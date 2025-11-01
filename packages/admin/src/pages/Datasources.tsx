@@ -9,7 +9,7 @@ interface Datasource {
   projectKey: string
   id: string
   name: string
-  type: 'rest_api' | 'graphql' | 'database'
+  type: 'rest_api' | 'mongodb' | 'sql' | 'static'
   config: {
     baseUrl?: string
     method?: string
@@ -26,6 +26,25 @@ interface Datasource {
     queryParams?: Record<string, string>
     responsePath?: string
   }
+  enabled?: boolean
+  syncConfig?: {
+    enabled: boolean
+    interval: '5m' | '15m' | '1h' | '6h' | '24h'
+    externalCodeField?: string
+    labelField?: string
+    valueField?: string
+  }
+  lastSync?: {
+    date: string
+    status: 'success' | 'error'
+    stats?: {
+      recordsFound: number
+      recordsAdded: number
+      recordsUpdated: number
+      recordsDisabled: number
+    }
+    error?: string
+  }
   createdAt: string
   updatedAt: string
 }
@@ -34,8 +53,16 @@ interface DatasourceFormData {
   projectKey: string
   id: string
   name: string
-  type: 'rest_api' | 'graphql' | 'database'
+  type: 'rest_api' | 'mongodb' | 'sql' | 'static'
   config: Datasource['config']
+  enabled?: boolean
+  syncConfig?: {
+    enabled: boolean
+    interval: '5m' | '15m' | '1h' | '6h' | '24h'
+    externalCodeField?: string
+    labelField?: string
+    valueField?: string
+  }
 }
 
 export function Datasources() {
@@ -46,6 +73,7 @@ export function Datasources() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingDatasource, setEditingDatasource] = useState<Datasource | undefined>()
+  const [syncingDatasources, setSyncingDatasources] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadDatasources()
@@ -122,8 +150,9 @@ export function Datasources() {
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'rest_api': return 'REST API'
-      case 'graphql': return 'GraphQL'
-      case 'database': return 'Database'
+      case 'mongodb': return 'MongoDB'
+      case 'sql': return 'SQL Database'
+      case 'static': return 'Estático'
       default: return type
     }
   }
@@ -135,6 +164,29 @@ export function Datasources() {
       case 'basic': return 'Basic Auth'
       case 'apikey': return 'API Key'
       default: return 'Não configurado'
+    }
+  }
+
+  const handleManualSync = async (datasourceId: string) => {
+    try {
+      setSyncingDatasources(prev => new Set(prev).add(datasourceId))
+      
+      const response = await api.post(`/datasources/${datasourceId}/sync`, {})
+      const result = await response.json()
+      
+      // Recarrega a lista para mostrar o lastSync atualizado
+      await loadDatasources()
+      
+      alert(`Sincronização concluída!\n\nNovos: ${result.stats.recordsAdded}\nAtualizados: ${result.stats.recordsUpdated}\nDesabilitados: ${result.stats.recordsDisabled}`)
+    } catch (error) {
+      console.error('Erro ao sincronizar:', error)
+      alert('Erro ao sincronizar datasource. Veja o console para mais detalhes.')
+    } finally {
+      setSyncingDatasources(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(datasourceId)
+        return newSet
+      })
     }
   }
 
@@ -233,10 +285,89 @@ export function Datasources() {
                     <p className="text-xs text-muted-foreground">
                       ID: <code className="bg-gray-100 px-1 rounded">{datasource.id}</code>
                     </p>
+                    
+                    {/* Status do datasource */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`px-2 py-1 text-xs rounded-md font-medium ${
+                        datasource.enabled !== false 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {datasource.enabled !== false ? '✓ Ativo' : '○ Inativo'}
+                      </span>
+                      
+                      {datasource.syncConfig?.enabled && (
+                        <span className="px-2 py-1 text-xs rounded-md font-medium bg-purple-100 text-purple-800">
+                          🔄 Sync: {datasource.syncConfig.interval}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Última sincronização */}
+                    {datasource.syncConfig?.enabled && datasource.lastSync && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <h4 className="text-xs font-semibold mb-2 text-gray-700">Última Sincronização:</h4>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-600">Data:</span>
+                            <div className="font-medium">
+                              {new Date(datasource.lastSync.date).toLocaleString('pt-BR')}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Status:</span>
+                            <div className={`font-medium ${
+                              datasource.lastSync.status === 'success' 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {datasource.lastSync.status === 'success' ? '✅ Sucesso' : '❌ Erro'}
+                            </div>
+                          </div>
+                          {datasource.lastSync.stats && (
+                            <>
+                              <div>
+                                <span className="text-gray-600">Encontrados:</span>
+                                <div className="font-medium">{datasource.lastSync.stats.recordsFound}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Novos:</span>
+                                <div className="font-medium text-green-600">
+                                  +{datasource.lastSync.stats.recordsAdded}
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Atualizados:</span>
+                                <div className="font-medium text-blue-600">
+                                  {datasource.lastSync.stats.recordsUpdated}
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Desabilitados:</span>
+                                <div className="font-medium text-orange-600">
+                                  {datasource.lastSync.stats.recordsDisabled}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
-                <div className="flex space-x-2 ml-4">
+                <div className="flex flex-col space-y-2 ml-4">
+                  {datasource.syncConfig?.enabled && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleManualSync(datasource.id)}
+                      disabled={syncingDatasources.has(datasource.id)}
+                      className="text-purple-600 hover:text-purple-700 hover:border-purple-300"
+                    >
+                      {syncingDatasources.has(datasource.id) ? '🔄 Sincronizando...' : '🔄 Sincronizar Agora'}
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm"

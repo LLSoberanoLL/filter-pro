@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FilterPro - Teste Manual de Dependências Bidirecionais</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { margin-bottom: 1rem; color: #333; }
+    .test-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      color: #0066cc;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #0066cc;
+      padding-bottom: 0.5rem;
+    }
+    .test-case {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-left: 4px solid #28a745;
+      border-radius: 4px;
+    }
+    .test-case.pending {
+      border-left-color: #ffc107;
+    }
+    .test-case.failed {
+      border-left-color: #dc3545;
+    }
+    .test-case h3 {
+      margin-bottom: 0.5rem;
+      color: #333;
+      font-size: 1.1rem;
+    }
+    .test-step {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: white;
+      border-radius: 4px;
+    }
+    .expected {
+      color: #28a745;
+      font-weight: 500;
+    }
+    .actual {
+      color: #0066cc;
+      font-weight: 500;
+    }
+    .status {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    .status.pass { background: #d4edda; color: #155724; }
+    .status.pending { background: #fff3cd; color: #856404; }
+    .status.fail { background: #f8d7da; color: #721c24; }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-right: 1rem;
+    }
+    button:hover { background: #0052a3; }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .controls {
+      margin: 2rem 0;
+      padding: 1rem;
+      background: #e9ecef;
+      border-radius: 6px;
+    }
+    .log {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #263238;
+      color: #aed581;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .summary {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .summary-card {
+      flex: 1;
+      padding: 1rem;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .summary-card.total { background: #e3f2fd; color: #1565c0; }
+    .summary-card.passed { background: #d4edda; color: #155724; }
+    .summary-card.failed { background: #f8d7da; color: #721c24; }
+    .summary-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+      display: block;
+    }
+    .summary-card .label {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 FilterPro - Teste Manual de Dependências Bidirecionais</h1>
+    
+    <div class="summary">
+      <div class="summary-card total">
+        <span class="number" id="total-tests">0</span>
+        <span class="label">Total de Testes</span>
+      </div>
+      <div class="summary-card passed">
+        <span class="number" id="passed-tests">0</span>
+        <span class="label">Passaram</span>
+      </div>
+      <div class="summary-card failed">
+        <span class="number" id="failed-tests">0</span>
+        <span class="label">Falharam</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button onclick="runAllTests()">▶️ Executar Todos os Testes</button>
+      <button onclick="clearLog()">🗑️ Limpar Log</button>
+      <button onclick="window.location.reload()">🔄 Reiniciar Página</button>
+    </div>
+
+    <div class="test-section">
+      <h2>Cenário 1: Estado Inicial (Sem Filtros)</h2>
+      
+      <div class="test-case pending" id="test-1">
+        <h3>✓ Deve carregar todos os países quando não há filtro de cidade</h3>
+        <div class="test-step">
+          <strong>Ação:</strong> GET /mock-countries<br>
+          <strong>Esperado:</strong> <span class="expected">[Brazil, USA]</span><br>
+          <strong>Obtido:</strong> <span class="actual" id="result-1">Aguardando...</span>
+        </div>
+      </div>
+
+      <div class="test-case pending" id="test-2">
+        <h3>✓ Deve carregar todas as cidades quando não há filtro de país</h3>
+        <div class="test-step">
+          <strong>Ação:</strong> GET /mock-cities<br>
+          <strong>Esperado:</strong> <span class="expected">&gt; 4 cidades (todas)</span><br>
+          <strong>Obtido:</strong> <span class="actual" id="result-2">Aguardando...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Cenário 2: Filtro Forward (Country → City)</h2>
+      
+      <div class="test-case pending" id="test-3">
+        <h3>✓ Deve filtrar cidades quando country=BR</h3>
+        <div class="test-step">
+          <strong>Ação:</strong> GET /mock-cities?country=BR<br>
+          <strong>Esperado:</strong> <span class="expected">4 cidades brasileiras</span><br>
+          <strong>Obtido:</strong> <span class="actual" id="result-3">Aguardando...</span>
+        </div>
+      </div>
+
+      <div class="test-case pending" id="test-4">
+        <h3>✓ Deve filtrar cidades quando country=US</h3>
+        <div class="test-step">
+          <strong>Ação:</strong> GET /mock-cities?country=US<br>
+          <strong>Esperado:</strong> <span class="expected">4 cidades americanas</span><br>
+          <strong>Obtido:</strong> <span class="actual" id="result-4">Aguardando...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Cenário 3: Filtro Reverso (City → Country)</h2>
+      
+      <div class="test-case pending" id="test-5">
+        <h3>✓ Deve filtrar países quando city=sao-paulo</h3>
+        <div class="test-step">
+          <strong>Ação:</strong> GET /mock-countries?city=sao-paulo<br>
+          <strong>Esperado:</strong> <span class="expected">[Brazil]</span><br>
+          <strong>Obtido:</strong> <span class="actual" id="result-5">Aguardando...</span>
+        </div>
+      </div>
+
+      <div class="test-case pending" id="test-6">
+        <h3>✓ Deve filtrar países quando city=california</h3>
+        <div class="test-step">
+          <strong>Ação:</strong> GET /mock-countries?city=california<br>
+          <strong>Esperado:</strong> <span class="expected">[USA]</span><br>
+          <strong>Obtido:</strong> <span class="actual" id="result-6">Aguardando...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>📋 Log de Execução</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:4000';
+    let totalTests = 6;
+    let passedTests = 0;
+    let failedTests = 0;
+
+    function updateSummary() {
+      document.getElementById('total-tests').textContent = totalTests;
+      document.getElementById('passed-tests').textContent = passedTests;
+      document.getElementById('failed-tests').textContent = failedTests;
+    }
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      const color = type === 'success' ? '#aed581' : type === 'error' ? '#ef5350' : '#81d4fa';
+      logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+    }
+
+    function markTest(id, passed, result) {
+      const testCase = document.getElementById(id);
+      const resultSpan = document.getElementById(`result-${id.split('-')[1]}`);
+      
+      testCase.className = passed ? 'test-case' : 'test-case failed';
+      resultSpan.textContent = result;
+      
+      if (passed) {
+        passedTests++;
+        log(`✅ ${testCase.querySelector('h3').textContent} - PASSOU`, 'success');
+      } else {
+        failedTests++;
+        log(`❌ ${testCase.querySelector('h3').textContent} - FALHOU`, 'error');
+      }
+      
+      updateSummary();
+    }
+
+    async function runTest1() {
+      log('🧪 Teste 1: Carregando todos os países...');
+      try {
+        const response = await fetch(`${API_URL}/mock-countries`);
+        const countries = await response.json();
+        const values = countries.map(c => c.value);
+        const passed = values.includes('BR') && values.includes('US') && countries.length === 2;
+        markTest('test-1', passed, `${countries.length} países: ${values.join(', ')}`);
+      } catch (error) {
+        markTest('test-1', false, `Erro: ${error.message}`);
+      }
+    }
+
+    async function runTest2() {
+      log('🧪 Teste 2: Carregando todas as cidades...');
+      try {
+        const response = await fetch(`${API_URL}/mock-cities`);
+        const cities = await response.json();
+        const passed = cities.length > 4;
+        markTest('test-2', passed, `${cities.length} cidades`);
+      } catch (error) {
+        markTest('test-2', false, `Erro: ${error.message}`);
+      }
+    }
+
+    async function runTest3() {
+      log('🧪 Teste 3: Filtrando cidades por country=BR...');
+      try {
+        const response = await fetch(`${API_URL}/mock-cities?country=BR`);
+        const cities = await response.json();
+        const values = cities.map(c => c.value);
+        const passed = cities.length === 4 && values.includes('sao-paulo');
+        markTest('test-3', passed, `${cities.length} cidades: ${values.join(', ')}`);
+      } catch (error) {
+        markTest('test-3', false, `Erro: ${error.message}`);
+      }
+    }
+
+    async function runTest4() {
+      log('🧪 Teste 4: Filtrando cidades por country=US...');
+      try {
+        const response = await fetch(`${API_URL}/mock-cities?country=US`);
+        const cities = await response.json();
+        const values = cities.map(c => c.value);
+        const passed = cities.length === 4 && values.includes('california');
+        markTest('test-4', passed, `${cities.length} cidades: ${values.join(', ')}`);
+      } catch (error) {
+        markTest('test-4', false, `Erro: ${error.message}`);
+      }
+    }
+
+    async function runTest5() {
+      log('🧪 Teste 5: Filtrando países por city=sao-paulo...');
+      try {
+        const response = await fetch(`${API_URL}/mock-countries?city=sao-paulo`);
+        const countries = await response.json();
+        const passed = countries.length === 1 && countries[0].value === 'BR';
+        markTest('test-5', passed, `${countries.length} país: ${countries[0]?.label || 'nenhum'}`);
+      } catch (error) {
+        markTest('test-5', false, `Erro: ${error.message}`);
+      }
+    }
+
+    async function runTest6() {
+      log('🧪 Teste 6: Filtrando países por city=california...');
+      try {
+        const response = await fetch(`${API_URL}/mock-countries?city=california`);
+        const countries = await response.json();
+        const passed = countries.length === 1 && countries[0].value === 'US';
+        markTest('test-6', passed, `${countries.length} país: ${countries[0]?.label || 'nenhum'}`);
+      } catch (error) {
+        markTest('test-6', false, `Erro: ${error.message}`);
+      }
+    }
+
+    async function runAllTests() {
+      passedTests = 0;
+      failedTests = 0;
+      clearLog();
+      updateSummary();
+      
+      log('🚀 Iniciando execução dos testes...', 'info');
+      log('📡 Conectando ao backend em ' + API_URL, 'info');
+      
+      await runTest1();
+      await runTest2();
+      await runTest3();
+      await runTest4();
+      await runTest5();
+      await runTest6();
+      
+      log('');
+      log('✨ ========== RESULTADO FINAL ==========', 'info');
+      log(`📊 Total: ${totalTests} testes`, 'info');
+      log(`✅ Passou: ${passedTests} testes`, 'success');
+      log(`❌ Falhou: ${failedTests} testes`, 'error');
+      
+      if (failedTests === 0) {
+        log('🎉 TODOS OS TESTES PASSARAM! 🎉', 'success');
+      } else {
+        log(`⚠️ ${failedTests} teste(s) falharam. Verifique os detalhes acima.`, 'error');
+      }
+    }
+
+    // Inicialização
+    updateSummary();
+    log('✨ Página carregada. Clique em "Executar Todos os Testes" para iniciar.', 'info');
+  </script>
+</body>
+</html>

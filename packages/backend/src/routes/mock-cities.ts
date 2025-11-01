@@ -1,26 +1,26 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
-// Mock de cidades por país
-const citiesByCountry: Record<string, Array<{ label: string; value: string }>> = {
+// Mock de cidades por país - agora com metadados completos
+const citiesByCountry: Record<string, Array<{ label: string; value: string; country: string }>> = {
   'BR': [
-    { label: 'São Paulo', value: 'sao-paulo' },
-    { label: 'Rio de Janeiro', value: 'rio-de-janeiro' },
-    { label: 'Brasília', value: 'brasilia' },
-    { label: 'Belo Horizonte', value: 'belo-horizonte' },
+    { label: 'São Paulo', value: 'sao-paulo', country: 'BR' },
+    { label: 'Rio de Janeiro', value: 'rio-de-janeiro', country: 'BR' },
+    { label: 'Brasília', value: 'brasilia', country: 'BR' },
+    { label: 'Belo Horizonte', value: 'belo-horizonte', country: 'BR' },
   ],
   'US': [
-    { label: 'California', value: 'california' },
-    { label: 'Texas', value: 'texas' },
-    { label: 'Florida', value: 'florida' },
-    { label: 'New York', value: 'new-york' },
+    { label: 'California', value: 'california', country: 'US' },
+    { label: 'Texas', value: 'texas', country: 'US' },
+    { label: 'Florida', value: 'florida', country: 'US' },
+    { label: 'New York', value: 'new-york', country: 'US' },
   ],
   'Brazil': [
-    { label: 'São Paulo', value: 'sao-paulo' },
-    { label: 'Rio de Janeiro', value: 'rio-de-janeiro' },
+    { label: 'São Paulo', value: 'sao-paulo', country: 'BR' },
+    { label: 'Rio de Janeiro', value: 'rio-de-janeiro', country: 'BR' },
   ],
   'USA': [
-    { label: 'California', value: 'california' },
-    { label: 'Texas', value: 'texas' },
+    { label: 'California', value: 'california', country: 'US' },
+    { label: 'Texas', value: 'texas', country: 'US' },
   ]
 };
 

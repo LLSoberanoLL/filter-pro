@@ -15,8 +15,14 @@ export interface Filter {
   active: boolean
   order: number
   dependencies: Array<{
-    sourceFilterId: string
-    type: 'restrictOptions' | 'conditionalShow'
+    filterSlug: string
+    mode: 'affects' | 'affected-by'
+    mapping: {
+      myField?: string
+      myMetadataField?: string
+      targetField?: string
+      targetMetadataField?: string
+    }
   }>
   optionsConfig?: {
     static?: FilterOption[]
@@ -233,11 +239,10 @@ export class FilterPro extends LitElement {
       try {
         const queryParams = new URLSearchParams()
         
-        // Para cada dependência do tipo restrictOptions, adicionar o valor do filtro source aos query params
-        // APENAS se o filtro source tiver um valor selecionado
+        // Para cada dependência affected-by, adicionar o valor do filtro relacionado aos query params
         const hasAnyDependencyValue = filter.dependencies.some(dep => {
-          if (dep.type === 'restrictOptions') {
-            return !!this.filterValues[dep.sourceFilterId]
+          if (dep.mode === 'affected-by') {
+            return !!this.filterValues[dep.filterSlug]
           }
           return false
         })
@@ -245,16 +250,16 @@ export class FilterPro extends LitElement {
         // Só adiciona params se houver pelo menos um valor de dependência
         if (hasAnyDependencyValue) {
           filter.dependencies.forEach(dep => {
-            if (dep.type === 'restrictOptions') {
-              const sourceValue = this.filterValues[dep.sourceFilterId]
+            if (dep.mode === 'affected-by') {
+              const sourceValue = this.filterValues[dep.filterSlug]
               if (sourceValue) {
-                queryParams.set(dep.sourceFilterId, sourceValue)
+                queryParams.set(dep.filterSlug, sourceValue)
               }
             }
           })
         }
 
-        const url = `${this.apiUrl}/datasources/${filter.optionsConfig.dynamic.datasourceId}/options?${queryParams}`
+        const url = `${this.apiUrl}/projects/${this.projectKey}/filters/${filter.slug}/options?${queryParams}`
         console.log('🔍 FilterPro: Loading options for', filter.slug, {
           url,
           dependencies: filter.dependencies,
@@ -270,7 +275,13 @@ export class FilterPro extends LitElement {
           this.optionsCache[cacheKey] = options
           this.requestUpdate()
         } else {
-          console.error('❌ Failed to load options for', filter.slug, ':', response.status, response.statusText)
+          const errorBody = await response.text()
+          console.error('❌ Failed to load options for', filter.slug, ':', {
+            status: response.status,
+            statusText: response.statusText,
+            url,
+            body: errorBody
+          })
         }
       } catch (error) {
         console.error(`FilterPro: Failed to load options for ${filter.slug}`, error)
@@ -286,8 +297,8 @@ export class FilterPro extends LitElement {
     if (filter.optionsConfig?.dynamic) {
       // Cache key baseado nos valores dos filtros dos quais este filtro depende
       const depValues = filter.dependencies
-        .filter(dep => dep.type === 'restrictOptions')
-        .map(dep => `${dep.sourceFilterId}:${this.filterValues[dep.sourceFilterId] || 'empty'}`)
+        .filter(dep => dep.mode === 'affected-by')
+        .map(dep => `${dep.filterSlug}:${this.filterValues[dep.filterSlug] || 'empty'}`)
         .join('|')
       const cacheKey = `${filter.slug}_${depValues}`
       console.log('🔑 Cache key for', filter.slug, ':', cacheKey, {
@@ -298,10 +309,6 @@ export class FilterPro extends LitElement {
     }
     
     return filter.slug
-  }
-
-  private replaceTemplate(template: string, values: FilterValues): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] || '')
   }
 
   private async onFilterChange(filterSlug: string, value: any) {
@@ -320,7 +327,7 @@ export class FilterPro extends LitElement {
 
   private clearDependentCache(changedFilterSlug: string) {
     this.filters.forEach(filter => {
-      const isDependent = filter.dependencies.some(dep => dep.sourceFilterId === changedFilterSlug)
+      const isDependent = filter.dependencies.some(dep => dep.filterSlug === changedFilterSlug && dep.mode === 'affected-by')
       if (isDependent) {
         // Clear all cache entries for this filter
         Object.keys(this.optionsCache).forEach(key => {
@@ -334,7 +341,7 @@ export class FilterPro extends LitElement {
 
   private async loadDependentOptions(changedFilterSlug: string) {
     const dependentFilters = this.filters.filter(filter =>
-      filter.dependencies.some(dep => dep.sourceFilterId === changedFilterSlug)
+      filter.dependencies.some(dep => dep.filterSlug === changedFilterSlug && dep.mode === 'affected-by')
     )
 
     for (const filter of dependentFilters) {
@@ -378,13 +385,10 @@ export class FilterPro extends LitElement {
     this.dispatchEvent(event)
   }
 
-  private isFilterVisible(filter: Filter): boolean {
-    return filter.dependencies.every(dep => {
-      if (dep.type === 'conditionalShow') {
-        return !!this.filterValues[dep.sourceFilterId]
-      }
-      return true
-    })
+  private isFilterVisible(_filter: Filter): boolean {
+    // Por enquanto, todos os filtros são visíveis
+    // A funcionalidade de conditionalShow pode ser implementada futuramente
+    return true
   }
 
   private getFilterOptions(filter: Filter): FilterOption[] {

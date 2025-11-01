@@ -8,27 +8,39 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "seed": "ts-node src/seed.ts",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:bidirectional": "jest e2e-bidirectional-filters.test.ts"
   },
   "dependencies": {
-    "fastify": "^4.22.0",
     "@fastify/jwt": "^5.0.0",
     "@fastify/swagger": "^6.0.0",
-    "zod": "^3.23.0",
-    "mongoose": "^7.0.0",
-    "dotenv": "^16.0.0",
-    "pino": "^8.0.0",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "bcryptjs": "^2.4.3"
+    "dotenv": "^16.0.0",
+    "fastify": "^4.22.0",
+    "mongodb": "^6.20.0",
+    "mongoose": "^7.0.0",
+    "mysql2": "^3.15.3",
+    "node-cron": "^4.2.1",
+    "pg": "^8.16.3",
+    "pino": "^8.0.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
-    "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.0.0",
-    "jest": "^29.0.0",
-    "supertest": "^6.3.0",
+    "@jest/globals": "^30.2.0",
+    "@types/bcryptjs": "^2.4.2",
     "@types/jest": "^29.0.0",
     "@types/node": "^18.0.0",
-    "@types/bcryptjs": "^2.4.2"
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.15.6",
+    "@types/supertest": "^6.0.3",
+    "jest": "^29.0.0",
+    "supertest": "^6.3.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.0"
   }
 }

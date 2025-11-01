@@ -23,8 +23,14 @@ interface Filter {
   active: boolean
   order: number
   dependencies: Array<{
-    sourceFilterId: string
-    type: 'restrictOptions' | 'conditionalShow'
+    filterSlug: string
+    mode: 'affects' | 'affected-by'
+    mapping: {
+      myField?: string
+      myMetadataField?: string
+      targetField?: string
+      targetMetadataField?: string
+    }
   }>
   optionsConfig?: {
     static?: Array<{ label: string; value: string }>
@@ -47,8 +53,14 @@ interface FilterFormData {
   active: boolean
   order: number
   dependencies: Array<{
-    sourceFilterId: string
-    type: 'restrictOptions' | 'conditionalShow'
+    filterSlug: string
+    mode: 'affects' | 'affected-by'
+    mapping: {
+      myField?: string
+      myMetadataField?: string
+      targetField?: string
+      targetMetadataField?: string
+    }
   }>
   optionsConfig?: {
     static?: Array<{ label: string; value: string }>
@@ -173,6 +185,34 @@ export function FilterModal({
   // Atualiza o formulário quando o filtro a ser editado mudar
   useEffect(() => {
     if (filter) {
+      // Normalizar dependencies antigas para nova estrutura
+      const normalizedDependencies = (filter.dependencies || []).map((dep: any) => {
+        // Se já tem a nova estrutura, usa ela
+        if (dep.filterSlug && dep.mode && dep.mapping) {
+          return {
+            filterSlug: dep.filterSlug,
+            mode: dep.mode,
+            mapping: {
+              myField: dep.mapping.myField || '',
+              myMetadataField: dep.mapping.myMetadataField || '',
+              targetField: dep.mapping.targetField || '',
+              targetMetadataField: dep.mapping.targetMetadataField || ''
+            }
+          }
+        }
+        // Converter estrutura antiga para nova
+        return {
+          filterSlug: dep.sourceFilterId || dep.filterSlug || '',
+          mode: 'affected-by' as const,
+          mapping: {
+            myField: '',
+            myMetadataField: '',
+            targetField: '',
+            targetMetadataField: ''
+          }
+        }
+      })
+
       setFormData({
         projectKey: filter.projectKey,
         slug: filter.slug,
@@ -180,7 +220,7 @@ export function FilterModal({
         type: filter.type,
         active: filter.active,
         order: filter.order,
-        dependencies: filter.dependencies || [],
+        dependencies: normalizedDependencies,
         optionsConfig: filter.optionsConfig || {},
         uiConfig: filter.uiConfig || {},
       })
@@ -347,7 +387,11 @@ export function FilterModal({
   const addDependency = () => {
     setFormData({
       ...formData,
-      dependencies: [...formData.dependencies, { sourceFilterId: '', type: 'restrictOptions' }]
+      dependencies: [...formData.dependencies, { 
+        filterSlug: '', 
+        mode: 'affected-by',
+        mapping: {}
+      }]
     })
   }
 
@@ -358,9 +402,22 @@ export function FilterModal({
     })
   }
 
-  const updateDependency = (index: number, field: 'sourceFilterId' | 'type', value: string) => {
+  const updateDependency = (index: number, field: keyof typeof formData.dependencies[0], value: any) => {
     const updated = [...formData.dependencies]
-    updated[index][field] = value as any
+    if (field === 'mapping') {
+      updated[index].mapping = value
+    } else {
+      (updated[index] as any)[field] = value
+    }
+    setFormData({ ...formData, dependencies: updated })
+  }
+
+  const updateDependencyMapping = (index: number, mappingField: string, value: string) => {
+    const updated = [...formData.dependencies]
+    updated[index].mapping = {
+      ...updated[index].mapping,
+      [mappingField]: value || undefined
+    }
     setFormData({ ...formData, dependencies: updated })
   }
 
@@ -788,52 +845,125 @@ export function FilterModal({
               </div>
             )}
 
-            {/* Dependências */}
+            {/* Dependências - Apenas para opções dinâmicas */}
+            {optionsSource === 'dynamic' && (
             <div>
               <label className="block text-sm font-medium mb-1">
-                Dependências
+                🔗 Dependências entre Filtros
               </label>
               <p className="text-xs text-gray-500 mb-2">
-                Configure quando este filtro deve aparecer ou ter suas opções limitadas por outro filtro
+                Configure como este filtro se relaciona com outros filtros através de mapeamento de campos
               </p>
-              <div className="space-y-2">
-                {formData.dependencies.map((dep, index) => (
-                  <div key={index} className="flex gap-2">
-                    <select
-                      value={dep.sourceFilterId}
-                      onChange={(e) => updateDependency(index, 'sourceFilterId', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Selecione um filtro</option>
-                      {existingFilters
-                        .filter(f => f.slug !== formData.slug)
-                        .map(f => (
-                          <option key={f.slug} value={f.slug}>{f.name}</option>
-                        ))}
-                    </select>
-                    <select
-                      value={dep.type}
-                      onChange={(e) => updateDependency(index, 'type', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="restrictOptions">Restringir Opções</option>
-                      <option value="conditionalShow">Mostrar Condicionalmente</option>
-                    </select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeDependency(index)}
-                    >
-                      Remover
-                    </Button>
+              <div className="space-y-4">
+                {formData.dependencies.map((dep, index) => {
+                  // Garantir que mapping sempre existe
+                  const mapping = dep.mapping || { myField: '', myMetadataField: '', targetField: '', targetMetadataField: '' }
+                  const depWithMapping = { ...dep, mapping }
+                  
+                  return (
+                  <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+                    <div className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium mb-1">Filtro Relacionado</label>
+                        <select
+                          value={dep.filterSlug}
+                          onChange={(e) => updateDependency(index, 'filterSlug', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                          <option value="">Selecione um filtro</option>
+                          {existingFilters
+                            .filter(f => f.slug !== formData.slug)
+                            .map(f => (
+                              <option key={f.slug} value={f.slug}>{f.name}</option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium mb-1">Tipo de Relação</label>
+                        <select
+                          value={dep.mode}
+                          onChange={(e) => updateDependency(index, 'mode', e.target.value as 'affects' | 'affected-by')}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                          <option value="affected-by">Sou Afetado Por (affected-by)</option>
+                          <option value="affects">Eu Afeto (affects)</option>
+                        </select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeDependency(index)}
+                        className="mt-5"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+
+                    {/* Mapeamento de Campos */}
+                    <div className="pl-4 border-l-2 border-blue-300 space-y-2">
+                      <p className="text-xs font-medium text-blue-900">Mapeamento de Campos:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Meu Campo (field)</label>
+                          <input
+                            type="text"
+                            value={mapping.myField || ''}
+                            onChange={(e) => updateDependencyMapping(index, 'myField', e.target.value)}
+                            placeholder="ex: value"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Meu Metadata</label>
+                          <input
+                            type="text"
+                            value={mapping.myMetadataField || ''}
+                            onChange={(e) => updateDependencyMapping(index, 'myMetadataField', e.target.value)}
+                            placeholder="ex: country"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Campo Target</label>
+                          <input
+                            type="text"
+                            value={mapping.targetField || ''}
+                            onChange={(e) => updateDependencyMapping(index, 'targetField', e.target.value)}
+                            placeholder="ex: value"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Metadata Target</label>
+                          <input
+                            type="text"
+                            value={mapping.targetMetadataField || ''}
+                            onChange={(e) => updateDependencyMapping(index, 'targetMetadataField', e.target.value)}
+                            placeholder="ex: cities"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+                        <p className="font-medium text-blue-900 mb-1">💡 Exemplo de uso:</p>
+                        <p className="text-blue-800">
+                          {dep.mode === 'affected-by' 
+                            ? `Quando ${dep.filterSlug || '[filtro]'} é selecionado, seus dados filtram minhas opções`
+                            : `Quando EU sou selecionado, meus dados filtram as opções de ${dep.filterSlug || '[filtro]'}`
+                          }
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                  )
+                })}
                 <Button type="button" variant="outline" onClick={addDependency}>
-                  Adicionar Dependência
+                  + Adicionar Dependência
                 </Button>
               </div>
             </div>
+            )}
 
             <div className="flex justify-end space-x-3 border-t border-gray-200 -mx-6 px-6 mt-6 pt-6">
               <Button type="button" variant="outline" onClick={onClose}>

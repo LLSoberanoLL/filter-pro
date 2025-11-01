@@ -1,9 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
-// Mock de países
-const countries = [
-  { label: 'Brazil', value: 'BR' },
-  { label: 'USA', value: 'US' },
+// Mock de países - agora retorna com array de cidades
+const countriesData = [
+  { 
+    label: 'Brazil', 
+    value: 'BR',
+    cities: ['sao-paulo', 'rio-de-janeiro', 'brasilia', 'belo-horizonte']
+  },
+  { 
+    label: 'USA', 
+    value: 'US',
+    cities: ['california', 'texas', 'florida', 'new-york']
+  },
 ];
 
 // Mapeamento de cidades para países
@@ -29,15 +37,15 @@ export default async function (fastify: FastifyInstance) {
     
     if (!city) {
       // Retorna todos os países
-      console.log('✅ All countries:', { count: countries.length });
-      return countries;
+      console.log('✅ All countries:', { count: countriesData.length });
+      return countriesData;
     }
     
     // Buscar o país da cidade
     const countryCode = cityToCountry[city.toLowerCase()];
     
     if (countryCode) {
-      const filteredCountries = countries.filter(c => c.value === countryCode);
+      const filteredCountries = countriesData.filter(c => c.value === countryCode);
       console.log('✅ Countries with city:', { city, countries: filteredCountries });
       return filteredCountries;
     }
