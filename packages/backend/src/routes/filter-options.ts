@@ -73,7 +73,11 @@ export default async function (fastify: FastifyInstance) {
 
           // Para cada parâmetro recebido, verificar se há dependência configurada
           for (const [paramKey, paramValue] of Object.entries(queryParams)) {
-            console.log(`[FILTER-OPTIONS] Processando parâmetro: ${paramKey} = ${paramValue}`);
+            // paramValue pode ser um array (multiselect) ou string (select simples)
+            const isMultiValue = paramValue.includes(',')
+            const values = isMultiValue ? paramValue.split(',') : [paramValue]
+            
+            console.log(`[FILTER-OPTIONS] Processando parâmetro: ${paramKey} = ${paramValue} (${values.length} valores)`);
 
             // Buscar dependência que corresponde a este parâmetro
             // O paramKey deve ser o slug do filtro que está afetando este filtro
@@ -108,18 +112,19 @@ export default async function (fastify: FastifyInstance) {
 
               console.log(`[FILTER-OPTIONS] DatasourceId do filtro afetante '${paramKey}':`, affectingDatasourceId);
 
-              // Buscar o registro do filtro afetante para pegar seus dados/metadata
-              const affectingData = await DatasourceData.findOne({
+              // Buscar os registros do filtro afetante para pegar seus dados/metadata
+              // Suporta múltiplos valores (multiselect)
+              const affectingDataList = await DatasourceData.find({
                 datasourceId: affectingDatasourceId,
-                value: paramValue
+                value: { $in: values }
               }).lean();
 
-              if (!affectingData) {
-                console.log(`[FILTER-OPTIONS] Dados do filtro afetante não encontrados para value='${paramValue}'`);
+              if (!affectingDataList || affectingDataList.length === 0) {
+                console.log(`[FILTER-OPTIONS] Dados do filtro afetante não encontrados para values=${values.join(',')}`);
                 continue;
               }
 
-              console.log('[FILTER-OPTIONS] Dados do filtro afetante:', affectingData);
+              console.log(`[FILTER-OPTIONS] ${affectingDataList.length} registros do filtro afetante encontrados`);
 
               // Aplicar mapeamento da dependência
               const mapping = dependency.mapping;
@@ -155,18 +160,19 @@ export default async function (fastify: FastifyInstance) {
 
               // Agora sabemos que há exatamente 1 campo "my" e 1 campo "target"
               // Determinar qual combinação válida foi usada e aplicar o filtro
+              // Suporta múltiplos valores (multiselect)
 
-              let targetValue: any;
+              let targetValues: any[] = [];
               let queryKey: string;
               let sourceDesc: string;
               let targetDesc: string;
 
-              // Determinar de onde vem o valor (target)
+              // Determinar de onde vem o valor (target) - coletar de todos os registros
               if (hasTargetField && mapping.targetField) {
-                targetValue = (affectingData as any)[mapping.targetField];
+                targetValues = affectingDataList.map((data: any) => data[mapping.targetField]).filter(v => v !== undefined);
                 sourceDesc = mapping.targetField;
               } else if (mapping.targetMetadataField) {
-                targetValue = affectingData.metadata?.[mapping.targetMetadataField];
+                targetValues = affectingDataList.map((data: any) => data.metadata?.[mapping.targetMetadataField]).filter(v => v !== undefined);
                 sourceDesc = `metadata.${mapping.targetMetadataField}`;
               } else {
                 console.log(`[FILTER-OPTIONS] Mapeamento de target inválido`);
@@ -185,11 +191,17 @@ export default async function (fastify: FastifyInstance) {
                 continue;
               }
 
-              if (targetValue !== undefined) {
-                query[queryKey] = targetValue;
-                console.log(`[FILTER-OPTIONS] Aplicando filtro: ${targetDesc} = ${JSON.stringify(targetValue)} (de ${sourceDesc})`);
+              if (targetValues.length > 0) {
+                // Se houver múltiplos valores, usar $in
+                if (targetValues.length > 1) {
+                  query[queryKey] = { $in: targetValues };
+                  console.log(`[FILTER-OPTIONS] Aplicando filtro: ${targetDesc} IN [${targetValues.join(', ')}] (de ${sourceDesc})`);
+                } else {
+                  query[queryKey] = targetValues[0];
+                  console.log(`[FILTER-OPTIONS] Aplicando filtro: ${targetDesc} = ${JSON.stringify(targetValues[0])} (de ${sourceDesc})`);
+                }
               } else {
-                console.log(`[FILTER-OPTIONS] Valor não encontrado no filtro afetante para mapeamento`);
+                console.log(`[FILTER-OPTIONS] Nenhum valor encontrado no filtro afetante para mapeamento`);
               }
             } else {
               console.log(`[FILTER-OPTIONS] Nenhuma dependência configurada para parâmetro '${paramKey}'`);
@@ -197,7 +209,7 @@ export default async function (fastify: FastifyInstance) {
           }
         }
 
-        console.log('[FILTER-OPTIONS] Query final para DatasourceData:', query);
+        console.log('[FILTER-OPTIONS] Query final para DatasourceData:', JSON.stringify(query, null, 2));
 
         // 5. Buscar dados no datasourcedata
         const options = await DatasourceData.find(query)
@@ -205,6 +217,9 @@ export default async function (fastify: FastifyInstance) {
           .lean();
 
         console.log(`[FILTER-OPTIONS] ${options.length} opções encontradas`);
+        if (options.length > 0 && options.length <= 5) {
+          console.log('[FILTER-OPTIONS] Primeiras opções encontradas:', JSON.stringify(options, null, 2));
+        }
 
         // 6. Formatar resposta
         const formattedOptions = options.map(opt => ({

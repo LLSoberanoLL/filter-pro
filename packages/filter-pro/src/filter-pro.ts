@@ -11,7 +11,7 @@ export interface Filter {
   projectKey: string
   slug: string
   name: string
-  type: 'select' | 'range' | 'text'
+  type: 'select' | 'multiselect' | 'range' | 'text'
   active: boolean
   order: number
   dependencies: Array<{
@@ -34,6 +34,8 @@ export interface Filter {
   uiConfig?: {
     mode?: string
     placeholder?: string
+    searchable?: boolean
+    multiple?: boolean
   }
 }
 
@@ -119,6 +121,85 @@ export class FilterPro extends LitElement {
       font-size: 12px;
       margin-top: 4px;
     }
+
+    /* Searchable Select Styles */
+    .searchable-select {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .search-input {
+      border-bottom: 2px solid #007bff !important;
+    }
+
+    .searchable-select select {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* Multiselect Styles */
+    .multiselect-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .multiselect-options {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      background: white;
+      padding: 4px;
+    }
+
+    .multiselect-option {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.15s ease-in-out;
+      user-select: none;
+    }
+
+    .multiselect-option:hover {
+      background-color: #f8f9fa;
+    }
+
+    .multiselect-option.selected {
+      background-color: #e7f3ff;
+    }
+
+    .multiselect-option input[type="checkbox"] {
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    .option-label {
+      flex: 1;
+      font-size: 14px;
+      color: #495057;
+    }
+
+    .selected-count {
+      font-size: 12px;
+      color: #007bff;
+      font-weight: 600;
+      padding: 4px 8px;
+      background: #e7f3ff;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .no-results {
+      padding: 16px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 14px;
+      font-style: italic;
+    }
   `
 
   @property({ type: String })
@@ -144,6 +225,9 @@ export class FilterPro extends LitElement {
 
   @state()
   private optionsCache: Record<string, FilterOption[]> = {}
+
+  @state()
+  private searchTerms: Record<string, string> = {}
 
   connectedCallback() {
     super.connectedCallback()
@@ -253,7 +337,11 @@ export class FilterPro extends LitElement {
             if (dep.mode === 'affected-by') {
               const sourceValue = this.filterValues[dep.filterSlug]
               if (sourceValue) {
-                queryParams.set(dep.filterSlug, sourceValue)
+                // Se for array (multiselect), enviar como string separada por vírgula
+                const valueToSend = Array.isArray(sourceValue) 
+                  ? sourceValue.join(',') 
+                  : sourceValue
+                queryParams.set(dep.filterSlug, valueToSend)
               }
             }
           })
@@ -404,6 +492,8 @@ export class FilterPro extends LitElement {
     switch (filter.type) {
       case 'select':
         return this.renderSelectFilter(filter, value)
+      case 'multiselect':
+        return this.renderMultiselectFilter(filter, value)
       case 'range':
         return this.renderRangeFilter(filter, value)
       case 'text':
@@ -415,6 +505,11 @@ export class FilterPro extends LitElement {
 
   private renderSelectFilter(filter: Filter, value: string) {
     const options = this.getFilterOptions(filter)
+    const isSearchable = filter.uiConfig?.searchable
+    
+    if (isSearchable) {
+      return this.renderSearchableSelect(filter, value, options)
+    }
     
     return html`
       <div class="filter-group">
@@ -434,6 +529,129 @@ export class FilterPro extends LitElement {
             </option>
           `)}
         </select>
+      </div>
+    `
+  }
+
+  private renderSearchableSelect(filter: Filter, value: string, allOptions: FilterOption[]) {
+    const searchTerm = this.searchTerms[filter.slug] || ''
+    const filteredOptions = searchTerm
+      ? allOptions.filter(opt => 
+          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : allOptions
+
+    return html`
+      <div class="filter-group">
+        <label class="filter-label">${filter.name}</label>
+        <div class="searchable-select">
+          <input
+            type="text"
+            class="filter-input search-input"
+            placeholder="🔍 Pesquisar..."
+            .value=${searchTerm}
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement
+              this.searchTerms = {
+                ...this.searchTerms,
+                [filter.slug]: target.value
+              }
+              this.requestUpdate()
+            }}
+          />
+          <select
+            class="filter-input"
+            size="5"
+            .value=${value}
+            @change=${(e: Event) => {
+              const target = e.target as HTMLSelectElement
+              this.onFilterChange(filter.slug, target.value)
+              this.searchTerms = { ...this.searchTerms, [filter.slug]: '' }
+              this.requestUpdate()
+            }}
+          >
+            <option value="">Limpar seleção</option>
+            ${filteredOptions.map(option => html`
+              <option value=${option.value} ?selected=${option.value === value}>
+                ${option.label}
+              </option>
+            `)}
+          </select>
+          ${filteredOptions.length === 0 ? html`
+            <div class="no-results">Nenhum resultado encontrado</div>
+          ` : ''}
+        </div>
+      </div>
+    `
+  }
+
+  private renderMultiselectFilter(filter: Filter, value: string | string[]) {
+    const options = this.getFilterOptions(filter)
+    const selectedValues = Array.isArray(value) ? value : (value ? [value] : [])
+    const isSearchable = filter.uiConfig?.searchable
+    
+    const searchTerm = this.searchTerms[filter.slug] || ''
+    const filteredOptions = (isSearchable && searchTerm)
+      ? options.filter(opt => 
+          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : options
+
+    return html`
+      <div class="filter-group">
+        <label class="filter-label">${filter.name}</label>
+        <div class="multiselect-container">
+          ${isSearchable ? html`
+            <input
+              type="text"
+              class="filter-input search-input"
+              placeholder="🔍 Pesquisar..."
+              .value=${searchTerm}
+              @input=${(e: Event) => {
+                const target = e.target as HTMLInputElement
+                this.searchTerms = {
+                  ...this.searchTerms,
+                  [filter.slug]: target.value
+                }
+                this.requestUpdate()
+              }}
+            />
+          ` : ''}
+          <div class="multiselect-options">
+            ${filteredOptions.map(option => {
+              const isSelected = selectedValues.includes(String(option.value))
+              return html`
+                <label class="multiselect-option ${isSelected ? 'selected' : ''}">
+                  <input
+                    type="checkbox"
+                    .checked=${isSelected}
+                    @change=${(e: Event) => {
+                      const target = e.target as HTMLInputElement
+                      let newValue: string[]
+                      if (target.checked) {
+                        newValue = [...selectedValues, String(option.value)]
+                      } else {
+                        newValue = selectedValues.filter(v => v !== String(option.value))
+                      }
+                      this.onFilterChange(filter.slug, newValue.length > 0 ? newValue : '')
+                    }}
+                  />
+                  <span class="option-label">${option.label}</span>
+                </label>
+              `
+            })}
+          </div>
+          ${selectedValues.length > 0 ? html`
+            <div class="selected-count">
+              ${selectedValues.length} selecionado${selectedValues.length > 1 ? 's' : ''}
+            </div>
+          ` : ''}
+          ${filteredOptions.length === 0 ? html`
+            <div class="no-results">Nenhum resultado encontrado</div>
+          ` : ''}
+        </div>
       </div>
     `
   }
