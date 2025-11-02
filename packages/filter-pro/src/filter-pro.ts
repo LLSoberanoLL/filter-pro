@@ -728,20 +728,27 @@ export class FilterPro extends LitElement {
     }
   }
 
-  private toggleSelectAllSuperFilter(filterSlug: string) {
-    const filter = this.filters.find(f => f.slug === filterSlug)
-    if (!filter) return
-    
-    const options = this.getFilterOptions(filter)
+  private toggleSelectAllSuperFilter(filterSlug: string, visibleOptions: FilterOption[]) {
     const current = this.superFilterSelections[filterSlug] || []
-    const allValues = options.map(opt => String(opt.value))
+    const visibleValues = visibleOptions.map(opt => String(opt.value))
     
-    // Se todos estão selecionados, desmarca todos. Senão, seleciona todos
-    const allSelected = allValues.length > 0 && allValues.every(v => current.includes(v))
+    // Verifica se todos os itens VISÍVEIS estão selecionados
+    const allVisibleSelected = visibleValues.length > 0 && visibleValues.every(v => current.includes(v))
     
-    this.superFilterSelections = {
-      ...this.superFilterSelections,
-      [filterSlug]: allSelected ? [] : allValues
+    if (allVisibleSelected) {
+      // Desmarca todos os itens visíveis (mantém outros selecionados)
+      const newSelections = current.filter(v => !visibleValues.includes(v))
+      this.superFilterSelections = {
+        ...this.superFilterSelections,
+        [filterSlug]: newSelections
+      }
+    } else {
+      // Adiciona todos os itens visíveis (mantém outros já selecionados)
+      const newSelections = [...new Set([...current, ...visibleValues])]
+      this.superFilterSelections = {
+        ...this.superFilterSelections,
+        [filterSlug]: newSelections
+      }
     }
   }
 
@@ -1128,9 +1135,9 @@ export class FilterPro extends LitElement {
       filteredOptions = filteredOptions.filter(opt => selections.includes(String(opt.value)))
     }
 
-    // Verifica se todos os itens visíveis estão selecionados
-    const allValues = options.map(opt => String(opt.value))
-    const allSelected = allValues.length > 0 && allValues.every(v => selections.includes(v))
+    // Verifica se todos os itens VISÍVEIS estão selecionados
+    const visibleValues = filteredOptions.map(opt => String(opt.value))
+    const allSelected = visibleValues.length > 0 && visibleValues.every(v => selections.includes(v))
 
     return html`
       <div class="modal-overlay" @click=${() => this.closeSuperFilter()}>
@@ -1159,7 +1166,7 @@ export class FilterPro extends LitElement {
             <div class="modal-controls">
               <button
                 class="modal-control-btn ${allSelected ? 'active' : ''}"
-                @click=${() => this.toggleSelectAllSuperFilter(this.superFilterOpen!)}
+                @click=${() => this.toggleSelectAllSuperFilter(this.superFilterOpen!, filteredOptions)}
               >
                 ${allSelected ? '✕' : '✓'} ${allSelected ? 'Desmarcar todos' : 'Selecionar todos'}
               </button>
