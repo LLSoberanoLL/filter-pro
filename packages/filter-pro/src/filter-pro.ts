@@ -205,7 +205,7 @@ export class FilterPro extends LitElement {
     .filter-with-super {
       display: flex;
       gap: 8px;
-      align-items: flex-start;
+      align-items: flex-end;
     }
 
     .filter-with-super .filter-input-wrapper {
@@ -225,7 +225,8 @@ export class FilterPro extends LitElement {
       font-weight: 600;
       transition: all 0.2s ease;
       box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-      margin-top: 22px;
+      flex-shrink: 0;
+      height: 36px;
     }
 
     .super-filter-btn:hover {
@@ -868,6 +869,16 @@ export class FilterPro extends LitElement {
       <div class="filter-group">
         <label class="filter-label">${filter.name}</label>
         <div class="filter-with-super">
+          ${hasSuperFilter ? html`
+            <button
+              class="super-filter-btn"
+              @click=${() => this.openSuperFilter(filter.slug)}
+              title="Abrir super filtro"
+            >
+              ⚡ Filtrar
+              ${hasSelection ? html`<span class="super-filter-badge">${selectedCount}</span>` : ''}
+            </button>
+          ` : ''}
           <div class="filter-input-wrapper">
             <select
               class="filter-input"
@@ -886,16 +897,6 @@ export class FilterPro extends LitElement {
               `) : ''}
             </select>
           </div>
-          ${hasSuperFilter ? html`
-            <button
-              class="super-filter-btn"
-              @click=${() => this.openSuperFilter(filter.slug)}
-              title="Abrir super filtro"
-            >
-              ⚡ Filtrar
-              ${hasSelection ? html`<span class="super-filter-badge">${selectedCount}</span>` : ''}
-            </button>
-          ` : ''}
         </div>
       </div>
     `
