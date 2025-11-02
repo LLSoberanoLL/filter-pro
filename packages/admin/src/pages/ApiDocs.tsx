@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
 
 type Section = 'projects' | 'filters' | 'datasources' | 'query'
@@ -14,8 +14,23 @@ interface Endpoint {
 
 export function ApiDocs() {
   const [selectedSection, setSelectedSection] = useState<Section>('projects')
+  const [showManual, setShowManual] = useState(false)
 
   const baseUrl = window.location.origin.replace(':5173', ':3001') + '/api'
+  const swaggerUrl = window.location.origin.replace(':5173', ':4000') + '/documentation'
+  
+  useEffect(() => {
+    // Check if Swagger is available
+    fetch(swaggerUrl)
+      .then(response => {
+        if (!response.ok) {
+          setShowManual(true)
+        }
+      })
+      .catch(() => {
+        setShowManual(true)
+      })
+  }, [swaggerUrl])
 
   const sections: Record<Section, { title: string; icon: string; endpoints: Endpoint[] }> = {
     projects: {
@@ -289,11 +304,63 @@ const results = await db.collection('products').find(mongoQuery).toArray();`,
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Documentação da API</h1>
+        <h1 className="text-3xl font-bold mb-2">📖 Documentação da API</h1>
         <p className="text-muted-foreground">
-          Referência completa dos endpoints da API FilterPro
+          Referência completa dos endpoints disponíveis
         </p>
       </div>
+      
+      {/* Swagger UI Notice */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-8">
+        <div className="flex items-start gap-4">
+          <div className="text-5xl">🚀</div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-blue-900 mb-3">
+              Documentação Interativa com Swagger UI
+            </h2>
+            <p className="text-blue-800 mb-4 leading-relaxed">
+              A API FilterPro possui documentação automática gerada com Swagger/OpenAPI. 
+              Você pode testar os endpoints diretamente no navegador, ver exemplos de requisições 
+              e respostas, e explorar todos os schemas de dados.
+            </p>
+            <div className="flex gap-3 mb-4">
+              <a href={swaggerUrl} target="_blank" rel="noopener noreferrer">
+                <Button size="lg" className="gap-2">
+                  <span>🎯</span>
+                  Abrir Swagger UI
+                </Button>
+              </a>
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => setShowManual(!showManual)}
+              >
+                {showManual ? 'Ocultar' : 'Ver'} Documentação Manual
+              </Button>
+            </div>
+            <div className="bg-white/60 rounded p-4 border border-blue-200">
+              <p className="text-sm text-blue-900 font-mono mb-2">
+                📍 URL da documentação:
+              </p>
+              <code className="text-sm bg-blue-100 px-3 py-2 rounded block">
+                {swaggerUrl}
+              </code>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {!showManual && (
+        <div className="bg-white rounded-lg border p-8 text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <p className="text-muted-foreground">
+            Clique em "Abrir Swagger UI" para acessar a documentação interativa completa
+          </p>
+        </div>
+      )}
+      
+      {showManual && (
+      <div className="space-y-8">
 
       {/* URL Base */}
       <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
@@ -434,6 +501,9 @@ const results = await db.collection('products').find(mongoQuery).toArray();`,
           <li>• HTTPS obrigatório em produção</li>
         </ul>
       </div>
+
+      </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import dotenv from 'dotenv';
 
 import { connectDb } from './models';
@@ -15,6 +17,49 @@ const fastify = Fastify({
   logger: { 
     level: process.env.LOG_LEVEL || 'info' 
   } 
+});
+
+// Swagger configuration - MUST be registered before routes
+fastify.register(fastifySwagger, {
+  openapi: {
+    info: {
+      title: 'FilterPro API',
+      description: 'API completa do sistema FilterPro - Gerenciamento de filtros dinâmicos com Web Component',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: 'http://localhost:4000',
+        description: 'Development server',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    tags: [
+      { name: 'Auth', description: 'Endpoints de autenticação' },
+      { name: 'Projects', description: 'Gerenciamento de projetos' },
+      { name: 'Filters', description: 'Gerenciamento de filtros' },
+      { name: 'Datasources', description: 'Gerenciamento de datasources' },
+      { name: 'Query', description: 'Gerador de queries MongoDB' },
+    ],
+  },
+}).after(() => {
+  fastify.register(fastifySwaggerUi, {
+    routePrefix: '/documentation',
+    uiConfig: {
+      docExpansion: 'list',
+      deepLinking: true,
+    },
+    staticCSP: true,
+    transformStaticCSP: (header) => header,
+  });
 });
 
 // Enable CORS for all origins - MUST be before other routes
@@ -83,8 +128,11 @@ const start = async () => {
     const cronService = DatasourceCronService.getInstance();
     await cronService.initializeSchedules();
     
-    await fastify.listen({ port: Number(process.env.PORT || 4000), host: '0.0.0.0' });
-    console.log(`Server listening on port ${process.env.PORT || 4000}`);
+    const port = Number(process.env.PORT || 4000);
+    await fastify.listen({ port, host: '0.0.0.0' });
+    
+    console.log(`✅ Server listening on port ${port}`);
+    console.log(`📖 Swagger documentation available at http://localhost:${port}/documentation`);
     
     // Graceful shutdown
     const gracefulShutdown = async () => {
