@@ -19,7 +19,7 @@ interface Filter {
   projectKey: string
   slug: string
   name: string
-  type: 'select' | 'range' | 'text'
+  type: 'select' | 'multiselect' | 'range' | 'text'
   active: boolean
   order: number
   dependencies: Array<{
@@ -42,6 +42,7 @@ interface Filter {
   uiConfig?: {
     mode?: string
     placeholder?: string
+    searchable?: boolean
   }
 }
 
@@ -49,7 +50,7 @@ interface FilterFormData {
   projectKey: string
   slug: string
   name: string
-  type: 'select' | 'range' | 'text'
+  type: 'select' | 'multiselect' | 'range' | 'text'
   active: boolean
   order: number
   dependencies: Array<{
@@ -72,6 +73,7 @@ interface FilterFormData {
   uiConfig?: {
     mode?: string
     placeholder?: string
+    searchable?: boolean
   }
 }
 
@@ -585,7 +587,8 @@ export function FilterModal({
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="select">Seleção</option>
+                  <option value="select">Seleção Simples</option>
+                  <option value="multiselect">Seleção Múltipla</option>
                   <option value="range">Intervalo</option>
                   <option value="text">Texto</option>
                 </select>
@@ -623,8 +626,34 @@ export function FilterModal({
               </div>
             </div>
 
+            {/* Configurações de UI para select e multiselect */}
+            {(formData.type === 'select' || formData.type === 'multiselect') && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-sm mb-3 text-blue-900">Configurações de Interface</h4>
+                <div className="flex items-center">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.uiConfig?.searchable || false}
+                      onChange={(e) => setFormData({ 
+                        ...formData, 
+                        uiConfig: { ...formData.uiConfig, searchable: e.target.checked } 
+                      })}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">
+                      🔍 Habilitar Pesquisa
+                      <span className="block text-xs text-blue-700 font-normal">
+                        Adiciona uma barra de pesquisa para filtrar as opções
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Configurações específicas por tipo */}
-            {formData.type === 'select' && (
+            {(formData.type === 'select' || formData.type === 'multiselect') && (
               <div className="space-y-4">
                 {/* Seleção do tipo de origem dos dados */}
                 <div>
