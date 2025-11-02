@@ -6,6 +6,8 @@ import { Dashboard } from './pages/Dashboard'
 import { Projects } from './pages/Projects'
 import { Filters } from './pages/Filters'
 import { Datasources } from './pages/Datasources'
+import { ApiDocs } from './pages/ApiDocs'
+import { Examples } from './pages/Examples'
 import { Login } from './pages/Login'
 
 function App() {
@@ -26,6 +28,8 @@ function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="projects/:projectKey/filters" element={<Filters />} />
           <Route path="projects/:projectKey/datasources" element={<Datasources />} />
+          <Route path="api-docs" element={<ApiDocs />} />
+          <Route path="examples" element={<Examples />} />
         </Route>
       </Routes>
     </AuthProvider>

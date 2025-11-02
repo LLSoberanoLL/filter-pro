@@ -125,8 +125,12 @@ export function Dashboard() {
           <Link to="/projects">
             <Button>Ver Todos os Projetos</Button>
           </Link>
-          <Button variant="outline">Documentação da API</Button>
-          <Button variant="outline">Exemplos de Integração</Button>
+          <Link to="/api-docs">
+            <Button variant="outline">📖 Documentação da API</Button>
+          </Link>
+          <Link to="/examples">
+            <Button variant="outline">💻 Exemplos de Integração</Button>
+          </Link>
         </div>
       </div>
 
