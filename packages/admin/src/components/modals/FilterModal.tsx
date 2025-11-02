@@ -121,8 +121,29 @@ export function FilterModal({
   })
   const [datasources, setDatasources] = useState<Datasource[]>([])
   const [loadingDatasources, setLoadingDatasources] = useState(false)
-  const [templateFields, setTemplateFields] = useState<Array<{ key: string; value: string }>>(
-    Object.entries(filter?.optionsConfig?.dynamic?.template || {}).map(([key, value]) => ({ key, value }))
+  const [templateFields, setTemplateFields] = useState<Array<{ key: string; value: string; required?: boolean }>>(
+    (() => {
+      const existingTemplate = filter?.optionsConfig?.dynamic?.template || {}
+      const entries = Object.entries(existingTemplate).map(([key, value]) => ({ 
+        key, 
+        value,
+        required: key === 'label' || key === 'value'
+      }))
+      
+      // Garante que label e value existam
+      const hasLabel = entries.some(e => e.key === 'label')
+      const hasValue = entries.some(e => e.key === 'value')
+      
+      if (!hasLabel) {
+        entries.unshift({ key: 'label', value: '', required: true })
+      }
+      if (!hasValue) {
+        const labelIndex = entries.findIndex(e => e.key === 'label')
+        entries.splice(labelIndex + 1, 0, { key: 'value', value: '', required: true })
+      }
+      
+      return entries
+    })()
   )
   
   // Extrai os caminhos disponíveis do schema
@@ -241,12 +262,34 @@ export function FilterModal({
           datasourceId: filter.optionsConfig.dynamic.datasourceId,
           template: filter.optionsConfig.dynamic.template || {}
         })
-        setTemplateFields(
-          Object.entries(filter.optionsConfig.dynamic.template || {}).map(([key, value]) => ({ key, value }))
-        )
+        
+        const existingTemplate = filter.optionsConfig.dynamic.template || {}
+        const entries = Object.entries(existingTemplate).map(([key, value]) => ({ 
+          key, 
+          value,
+          required: key === 'label' || key === 'value'
+        }))
+        
+        // Garante que label e value existam
+        const hasLabel = entries.some(e => e.key === 'label')
+        const hasValue = entries.some(e => e.key === 'value')
+        
+        if (!hasLabel) {
+          entries.unshift({ key: 'label', value: '', required: true })
+        }
+        if (!hasValue) {
+          const labelIndex = entries.findIndex(e => e.key === 'label')
+          entries.splice(labelIndex + 1, 0, { key: 'value', value: '', required: true })
+        }
+        
+        setTemplateFields(entries)
       } else {
         setDynamicConfig({ datasourceId: '', template: {} })
-        setTemplateFields([])
+        // Inicia com label e value obrigatórios vazios
+        setTemplateFields([
+          { key: 'label', value: '', required: true },
+          { key: 'value', value: '', required: true }
+        ])
       }
     } else {
       // Reset para novo filtro
@@ -264,7 +307,11 @@ export function FilterModal({
       setOptionsSource('static')
       setStaticOptions([{ label: '', value: '' }])
       setDynamicConfig({ datasourceId: '', template: {} })
-      setTemplateFields([])
+      // Inicia com label e value obrigatórios vazios
+      setTemplateFields([
+        { key: 'label', value: '', required: true },
+        { key: 'value', value: '', required: true }
+      ])
     }
     setErrors({})
   }, [filter, projectKey, existingFilters])
@@ -303,6 +350,18 @@ export function FilterModal({
       }
       if (optionsSource === 'dynamic' && !dynamicConfig.datasourceId.trim()) {
         newErrors.datasource = 'Datasource é obrigatório para opções dinâmicas'
+      }
+      
+      // Validar campos obrigatórios do template
+      if (optionsSource === 'dynamic') {
+        const labelField = templateFields.find(f => f.key === 'label')
+        const valueField = templateFields.find(f => f.key === 'value')
+        
+        if (!labelField || !labelField.value.trim()) {
+          newErrors.template = 'O mapeamento "label" é obrigatório e deve estar preenchido'
+        } else if (!valueField || !valueField.value.trim()) {
+          newErrors.template = 'O mapeamento "value" é obrigatório e deve estar preenchido'
+        }
       }
       
       // Validar campos do template contra o schema
@@ -426,11 +485,20 @@ export function FilterModal({
   }
 
   const removeTemplateField = (index: number) => {
+    const field = templateFields[index]
+    // Impede remoção de campos obrigatórios
+    if (field.required) {
+      return
+    }
     setTemplateFields(templateFields.filter((_, i) => i !== index))
   }
 
   const updateTemplateField = (index: number, field: 'key' | 'value', value: string) => {
     const updated = [...templateFields]
+    // Se for campo obrigatório, não permite alterar a chave
+    if (field === 'key' && updated[index].required) {
+      return
+    }
     updated[index][field] = value
     setTemplateFields(updated)
   }
@@ -750,20 +818,27 @@ export function FilterModal({
                       <div className="space-y-2">
                         {templateFields.length > 0 ? (
                           templateFields.map((field, index) => (
-                            <div key={index} className="flex gap-2">
+                            <div key={index} className={`flex gap-2 ${field.required ? 'bg-yellow-50 p-2 rounded-lg border border-yellow-200' : ''}`}>
+                              {field.required && (
+                                <span className="flex items-center text-yellow-600 font-bold text-xs" title="Campo obrigatório">
+                                  *
+                                </span>
+                              )}
                               <input
                                 type="text"
                                 placeholder="Parâmetro (ex: label, value)"
                                 value={field.key}
                                 onChange={(e) => updateTemplateField(index, 'key', e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={field.required}
+                                className={`flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${field.required ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                title={field.required ? 'Campo obrigatório (não pode ser alterado)' : ''}
                               />
                               <input
                                 type="text"
                                 placeholder="Valor (ex: {{country}})"
                                 value={field.value}
                                 onChange={(e) => updateTemplateField(index, 'value', e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm ${field.required ? 'border-yellow-300' : 'border-gray-300'}`}
                                 list={`schema-paths-${index}`}
                               />
                               <datalist id={`schema-paths-${index}`}>
@@ -776,6 +851,8 @@ export function FilterModal({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => removeTemplateField(index)}
+                                disabled={field.required}
+                                title={field.required ? 'Campos obrigatórios não podem ser removidos' : 'Remover campo'}
                               >
                                 Remover
                               </Button>
