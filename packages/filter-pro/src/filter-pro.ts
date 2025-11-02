@@ -482,6 +482,111 @@ export class FilterPro extends LitElement {
       margin-bottom: 12px;
       opacity: 0.5;
     }
+
+    /* Custom Select with Search */
+    .custom-select-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-select-trigger {
+      width: 100%;
+      padding: 8px 32px 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      text-align: left;
+      position: relative;
+    }
+
+    .custom-select-trigger:hover {
+      border-color: #007bff;
+    }
+
+    .custom-select-trigger.open {
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    }
+
+    .custom-select-trigger::after {
+      content: '▼';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: #6c757d;
+    }
+
+    .custom-select-trigger.open::after {
+      transform: translateY(-50%) rotate(180deg);
+    }
+
+    .custom-select-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: white;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      max-height: 300px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .custom-select-search {
+      padding: 8px;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .custom-select-search input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .custom-select-search input:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    }
+
+    .custom-select-options {
+      overflow-y: auto;
+      max-height: 240px;
+    }
+
+    .custom-select-option {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.15s ease;
+    }
+
+    .custom-select-option:hover {
+      background-color: #f8f9fa;
+    }
+
+    .custom-select-option.selected {
+      background-color: #e7f3ff;
+      color: #007bff;
+      font-weight: 500;
+    }
+
+    .custom-select-option.todos {
+      font-weight: 600;
+      border-bottom: 1px solid #e9ecef;
+      background: #f8f9fa;
+    }
   `
 
   @property({ type: String })
@@ -523,9 +628,31 @@ export class FilterPro extends LitElement {
   @state()
   private superFilterShowOnlySelected: Record<string, boolean> = {}  // Mostra apenas selecionados
 
+  @state()
+  private customSelectOpen: string | null = null  // Slug do select customizado aberto
+
+  @state()
+  private customSelectSearch: Record<string, string> = {}  // Pesquisa dentro do select customizado
+
   connectedCallback() {
     super.connectedCallback()
     this.loadFilters()
+    
+    // Fecha dropdown customizado ao clicar fora
+    this.handleOutsideClick = this.handleOutsideClick.bind(this)
+    document.addEventListener('click', this.handleOutsideClick)
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    document.removeEventListener('click', this.handleOutsideClick)
+  }
+
+  private handleOutsideClick(e: Event) {
+    const target = e.target as HTMLElement
+    if (!this.shadowRoot?.contains(target)) {
+      this.customSelectOpen = null
+    }
   }
 
   updated(changedProperties: PropertyValues) {
@@ -763,16 +890,16 @@ export class FilterPro extends LitElement {
   private applySuperFilter(filterSlug: string) {
     const selections = this.superFilterSelections[filterSlug] || []
     
-    // Se não tem seleção ou todos estão selecionados, considera como "todos"
-    // Nesse caso, limpa o filtro (não envia query parameter)
+    // Super filtro apenas reduz as opções disponíveis no select
+    // Não envia valor final - o select principal faz isso
+    // Se nenhuma seleção, limpa o valor do filtro para "Todos"
     if (selections.length === 0) {
       this.onFilterChange(filterSlug, '')
-    } else {
-      // Envia apenas os selecionados
-      this.onFilterChange(filterSlug, selections)
     }
     
+    // Fecha o modal e atualiza o select com opções filtradas
     this.closeSuperFilter()
+    this.requestUpdate()
   }
 
   private async onFilterChange(filterSlug: string, value: any) {
@@ -880,17 +1007,25 @@ export class FilterPro extends LitElement {
   }
 
   private renderSelectFilter(filter: Filter, value: string) {
-    const options = this.getFilterOptions(filter)
+    const allOptions = this.getFilterOptions(filter)
     const isSearchable = filter.uiConfig?.searchable
-    const hasSuperFilter = filter.uiConfig?.searchable  // Super filtro disponível quando searchable
+    const hasSuperFilter = filter.uiConfig?.searchable
     
-    if (isSearchable && !hasSuperFilter) {
-      return this.renderSearchableSelect(filter, value, options)
+    // Se tem super filtro ativo, filtra as opções do select
+    const superFilterSelections = this.superFilterSelections[filter.slug] || []
+    const hasSuperFilterActive = superFilterSelections.length > 0
+    
+    // Opções a mostrar: se tem super filtro ativo, mostra apenas as selecionadas
+    const options = hasSuperFilterActive
+      ? allOptions.filter(opt => superFilterSelections.includes(String(opt.value)))
+      : allOptions
+    
+    // Se é searchable, usa select customizado com pesquisa
+    if (isSearchable) {
+      return this.renderCustomSelectWithSearch(filter, value, options, hasSuperFilterActive)
     }
     
-    const selectedCount = this.superFilterSelections[filter.slug]?.length || 0
-    const hasSelection = selectedCount > 0
-    
+    // Select simples sem pesquisa
     return html`
       <div class="filter-group">
         <label class="filter-label">${filter.name}</label>
@@ -902,7 +1037,7 @@ export class FilterPro extends LitElement {
               title="Abrir super filtro"
             >
               ⚡ Filtrar
-              ${hasSelection ? html`<span class="super-filter-badge">${selectedCount}</span>` : ''}
+              ${hasSuperFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
             </button>
           ` : ''}
           <div class="filter-input-wrapper">
@@ -913,15 +1048,194 @@ export class FilterPro extends LitElement {
                 const target = e.target as HTMLSelectElement
                 this.onFilterChange(filter.slug, target.value)
               }}
-              ?disabled=${hasSelection}
             >
-              <option value="">${hasSelection ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}` : 'Todos'}</option>
-              ${!hasSelection ? options.map(option => html`
+              <option value="">Todos</option>
+              ${options.map(option => html`
                 <option value=${option.value} ?selected=${option.value === value}>
                   ${option.label}
                 </option>
-              `) : ''}
+              `)}
             </select>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  private renderSearchableSelectWithSuperFilter(filter: Filter, value: string, selectOptions: FilterOption[], hasSupFilterActive: boolean) {
+    const searchTerm = this.searchTerms[filter.slug] || ''
+    const filteredOptions = searchTerm
+      ? selectOptions.filter(opt => 
+          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : selectOptions
+
+    const superFilterSelections = this.superFilterSelections[filter.slug] || []
+
+    return html`
+      <div class="filter-group">
+        <label class="filter-label">${filter.name}</label>
+        <div class="filter-with-super">
+          <button
+            class="super-filter-btn"
+            @click=${() => this.openSuperFilter(filter.slug)}
+            title="Abrir super filtro"
+          >
+            ⚡ Filtrar
+            ${hasSupFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
+          </button>
+          <div class="filter-input-wrapper searchable-select">
+            <input
+              type="text"
+              class="filter-input search-input"
+              placeholder="🔍 Pesquisar..."
+              .value=${searchTerm}
+              @input=${(e: Event) => {
+                const target = e.target as HTMLInputElement
+                this.searchTerms = {
+                  ...this.searchTerms,
+                  [filter.slug]: target.value
+                }
+                this.requestUpdate()
+              }}
+            />
+            <select
+              class="filter-input"
+              size="5"
+              .value=${value}
+              @change=${(e: Event) => {
+                const target = e.target as HTMLSelectElement
+                this.onFilterChange(filter.slug, target.value)
+                this.searchTerms = { ...this.searchTerms, [filter.slug]: '' }
+                this.requestUpdate()
+              }}
+            >
+              <option value="">Todos</option>
+              ${filteredOptions.map(option => html`
+                <option value=${option.value} ?selected=${option.value === value}>
+                  ${option.label}
+                </option>
+              `)}
+            </select>
+            ${filteredOptions.length === 0 ? html`
+              <div class="no-results">Nenhum resultado encontrado</div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  private renderCustomSelectWithSearch(filter: Filter, value: string, options: FilterOption[], hasSuperFilterActive: boolean) {
+    const isOpen = this.customSelectOpen === filter.slug
+    const searchTerm = this.customSelectSearch[filter.slug] || ''
+    const superFilterSelections = this.superFilterSelections[filter.slug] || []
+    
+    // Filtra opções pela pesquisa
+    const filteredOptions = searchTerm
+      ? options.filter(opt =>
+          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : options
+    
+    // Encontra o label da opção selecionada
+    const selectedOption = options.find(opt => String(opt.value) === value)
+    const displayText = selectedOption ? selectedOption.label : 'Todos'
+    
+    return html`
+      <div class="filter-group">
+        <label class="filter-label">${filter.name}</label>
+        <div class="filter-with-super">
+          <button
+            class="super-filter-btn"
+            @click=${() => this.openSuperFilter(filter.slug)}
+            title="Abrir super filtro"
+          >
+            ⚡ Filtrar
+            ${hasSuperFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
+          </button>
+          
+          <div class="filter-input-wrapper">
+            <div class="custom-select-wrapper">
+              <!-- Trigger button -->
+              <div
+                class="custom-select-trigger ${isOpen ? 'open' : ''}"
+                @click=${() => {
+                  if (isOpen) {
+                    this.customSelectOpen = null
+                  } else {
+                    this.customSelectOpen = filter.slug
+                    // Focus no input quando abrir
+                    setTimeout(() => {
+                      const input = this.shadowRoot?.querySelector(`#search-${filter.slug}`) as HTMLInputElement
+                      input?.focus()
+                    }, 50)
+                  }
+                }}
+              >
+                ${displayText}
+              </div>
+              
+              <!-- Dropdown -->
+              ${isOpen ? html`
+                <div class="custom-select-dropdown">
+                  <!-- Barra de pesquisa -->
+                  <div class="custom-select-search">
+                    <input
+                      id="search-${filter.slug}"
+                      type="text"
+                      placeholder="🔍 Pesquisar..."
+                      .value=${searchTerm}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement
+                        this.customSelectSearch = {
+                          ...this.customSelectSearch,
+                          [filter.slug]: target.value
+                        }
+                      }}
+                      @click=${(e: Event) => e.stopPropagation()}
+                    />
+                  </div>
+                  
+                  <!-- Lista de opções -->
+                  <div class="custom-select-options">
+                    <!-- Opção "Todos" -->
+                    <div
+                      class="custom-select-option todos ${value === '' ? 'selected' : ''}"
+                      @click=${() => {
+                        this.onFilterChange(filter.slug, '')
+                        this.customSelectOpen = null
+                        this.customSelectSearch = { ...this.customSelectSearch, [filter.slug]: '' }
+                      }}
+                    >
+                      Todos
+                    </div>
+                    
+                    <!-- Opções filtradas -->
+                    ${filteredOptions.map(option => html`
+                      <div
+                        class="custom-select-option ${String(option.value) === value ? 'selected' : ''}"
+                        @click=${() => {
+                          this.onFilterChange(filter.slug, String(option.value))
+                          this.customSelectOpen = null
+                          this.customSelectSearch = { ...this.customSelectSearch, [filter.slug]: '' }
+                        }}
+                      >
+                        ${option.label}
+                      </div>
+                    `)}
+                    
+                    ${filteredOptions.length === 0 ? html`
+                      <div class="custom-select-option" style="text-align: center; color: #6c757d; font-style: italic;">
+                        Nenhum resultado encontrado
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
           </div>
         </div>
       </div>
