@@ -118,14 +118,14 @@ export function DatasourceModal({
     id: datasource?.id || '',
     name: datasource?.name || '',
     type: datasource?.type || 'rest_api',
-    config: datasource?.config || {
+    config: datasource?.config || ({
       baseUrl: '',
       method: 'GET',
       headers: {},
-      auth: { type: 'none' },
+      auth: { type: 'bearer' },
       queryParams: {},
       responsePath: ''
-    },
+    } as RestApiConfig),
     sampleSchema: datasource?.sampleSchema || undefined,
     enabled: datasource?.enabled !== undefined ? datasource.enabled : true,
     syncConfig: datasource?.syncConfig || {
@@ -183,7 +183,8 @@ export function DatasourceModal({
   // Headers (apenas para REST API)
   const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>(() => {
     if (datasource && datasource.type === 'rest_api') {
-      return Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value: String(value) }))
+      const config = datasource.config as RestApiConfig
+      return Object.entries(config.headers || {}).map(([key, value]) => ({ key, value: String(value) }))
     }
     return []
   })
@@ -191,7 +192,8 @@ export function DatasourceModal({
   // Query Params (apenas para REST API)
   const [queryParams, setQueryParams] = useState<Array<{ key: string; value: string }>>(() => {
     if (datasource && datasource.type === 'rest_api') {
-      return Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) }))
+      const config = datasource.config as RestApiConfig
+      return Object.entries(config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) }))
     }
     return []
   })
@@ -216,8 +218,9 @@ export function DatasourceModal({
         }
       })
       if (datasource.type === 'rest_api') {
-        setHeaders(Object.entries(datasource.config.headers || {}).map(([key, value]) => ({ key, value: String(value) })))
-        setQueryParams(Object.entries(datasource.config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) })))
+        const config = datasource.config as RestApiConfig
+        setHeaders(Object.entries(config.headers || {}).map(([key, value]) => ({ key, value: String(value) })))
+        setQueryParams(Object.entries(config.queryParams || {}).map(([key, value]) => ({ key, value: String(value) })))
       }
     } else {
       setFormData({
@@ -229,10 +232,10 @@ export function DatasourceModal({
           baseUrl: '',
           method: 'GET',
           headers: {},
-          auth: { type: 'none' },
+          auth: { type: 'bearer' },
           queryParams: {},
           responsePath: ''
-        },
+        } as RestApiConfig,
         sampleSchema: undefined,
         enabled: true,
         syncConfig: {
@@ -275,8 +278,11 @@ export function DatasourceModal({
       newErrors.name = 'Nome é obrigatório'
     }
     
-    if (formData.type === 'rest_api' && !formData.config.baseUrl?.trim()) {
-      newErrors.baseUrl = 'URL base é obrigatória para REST API'
+    if (formData.type === 'rest_api') {
+      const config = formData.config as RestApiConfig
+      if (!config.baseUrl?.trim()) {
+        newErrors.baseUrl = 'URL base é obrigatória para REST API'
+      }
     }
     
     setErrors(newErrors)
@@ -299,7 +305,7 @@ export function DatasourceModal({
         return
       }
 
-      const config = formData.config
+      const config = formData.config as RestApiConfig
 
       // Construir headers
       const headersObj: Record<string, string> = {}
@@ -312,8 +318,8 @@ export function DatasourceModal({
       // Adicionar autenticação aos headers
       if (config.auth?.type === 'bearer' && config.auth.token) {
         headersObj['Authorization'] = `Bearer ${config.auth.token}`
-      } else if (config.auth?.type === 'apikey' && config.auth.apiKey) {
-        const headerName = config.auth.apiKeyHeader || 'X-API-Key'
+      } else if (config.auth?.type === 'api_key' && config.auth.apiKey) {
+        const headerName = config.auth.headerName || 'X-API-Key'
         headersObj[headerName] = config.auth.apiKey
       } else if (config.auth?.type === 'basic' && config.auth.username && config.auth.password) {
         const credentials = btoa(`${config.auth.username}:${config.auth.password}`)
@@ -565,7 +571,9 @@ export function DatasourceModal({
             </div>
 
             {/* Configurações específicas para REST API */}
-            {formData.type === 'rest_api' && (
+            {formData.type === 'rest_api' && (() => {
+              const config = formData.config as RestApiConfig
+              return (
               <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold text-lg">Configuração REST API</h3>
                 
@@ -577,10 +585,10 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="url"
-                      value={formData.config.baseUrl || ''}
+                      value={config.baseUrl || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, baseUrl: e.target.value }
+                        config: { ...config, baseUrl: e.target.value }
                       })}
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.baseUrl ? 'border-red-500' : 'border-gray-300'
@@ -597,10 +605,10 @@ export function DatasourceModal({
                       Método HTTP
                     </label>
                     <select
-                      value={formData.config.method || 'GET'}
+                      value={config.method || 'GET'}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, method: e.target.value }
+                        config: { ...config, method: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
@@ -618,11 +626,11 @@ export function DatasourceModal({
                     Autenticação
                   </label>
                   <select
-                    value={formData.config.auth?.type || 'none'}
+                    value={config.auth?.type || 'none'}
                     onChange={(e) => setFormData({
                       ...formData,
                       config: {
-                        ...formData.config,
+                        ...config,
                         auth: { type: e.target.value as any }
                       }
                     })}
@@ -631,36 +639,36 @@ export function DatasourceModal({
                     <option value="none">Sem autenticação</option>
                     <option value="bearer">Bearer Token</option>
                     <option value="basic">Basic Auth</option>
-                    <option value="apikey">API Key</option>
+                    <option value="api_key">API Key</option>
                   </select>
 
-                  {formData.config.auth?.type === 'bearer' && (
+                  {config.auth?.type === 'bearer' && (
                     <input
                       type="password"
                       placeholder="Token"
-                      value={formData.config.auth.token || ''}
+                      value={config.auth.token || ''}
                       onChange={(e) => setFormData({
                         ...formData,
                         config: {
-                          ...formData.config,
-                          auth: { ...formData.config.auth!, token: e.target.value }
+                          ...config,
+                          auth: { ...config.auth!, token: e.target.value }
                         }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   )}
 
-                  {formData.config.auth?.type === 'basic' && (
+                  {config.auth?.type === 'basic' && (
                     <div className="grid grid-cols-2 gap-3">
                       <input
                         type="text"
                         placeholder="Username"
-                        value={formData.config.auth.username || ''}
+                        value={config.auth.username || ''}
                         onChange={(e) => setFormData({
                           ...formData,
                           config: {
-                            ...formData.config,
-                            auth: { ...formData.config.auth!, username: e.target.value }
+                            ...config,
+                            auth: { ...config.auth!, username: e.target.value }
                           }
                         })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -668,12 +676,12 @@ export function DatasourceModal({
                       <input
                         type="password"
                         placeholder="Password"
-                        value={formData.config.auth.password || ''}
+                        value={config.auth.password || ''}
                         onChange={(e) => setFormData({
                           ...formData,
                           config: {
-                            ...formData.config,
-                            auth: { ...formData.config.auth!, password: e.target.value }
+                            ...config,
+                            auth: { ...config.auth!, password: e.target.value }
                           }
                         })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -681,17 +689,17 @@ export function DatasourceModal({
                     </div>
                   )}
 
-                  {formData.config.auth?.type === 'apikey' && (
+                  {config.auth?.type === 'api_key' && (
                     <div className="grid grid-cols-2 gap-3">
                       <input
                         type="text"
                         placeholder="Header Name (ex: X-API-Key)"
-                        value={formData.config.auth.apiKeyHeader || ''}
+                        value={config.auth.headerName || ''}
                         onChange={(e) => setFormData({
                           ...formData,
                           config: {
-                            ...formData.config,
-                            auth: { ...formData.config.auth!, apiKeyHeader: e.target.value }
+                            ...config,
+                            auth: { ...config.auth!, headerName: e.target.value }
                           }
                         })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -699,12 +707,12 @@ export function DatasourceModal({
                       <input
                         type="password"
                         placeholder="API Key"
-                        value={formData.config.auth.apiKey || ''}
+                        value={config.auth.apiKey || ''}
                         onChange={(e) => setFormData({
                           ...formData,
                           config: {
-                            ...formData.config,
-                            auth: { ...formData.config.auth!, apiKey: e.target.value }
+                            ...config,
+                            auth: { ...config.auth!, apiKey: e.target.value }
                           }
                         })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -799,10 +807,10 @@ export function DatasourceModal({
                   </p>
                   <input
                     type="text"
-                    value={formData.config.responsePath || ''}
+                    value={config.responsePath || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      config: { ...formData.config, responsePath: e.target.value }
+                      config: { ...config, responsePath: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="ex: data.items"
@@ -810,16 +818,16 @@ export function DatasourceModal({
                 </div>
 
                 {/* Body (para POST/PUT) */}
-                {(formData.config.method === 'POST' || formData.config.method === 'PUT') && (
+                {(config.method === 'POST' || config.method === 'PUT') && (
                   <div className="border-t pt-4">
                     <label className="block text-sm font-medium mb-1">
                       Request Body (JSON)
                     </label>
                     <textarea
-                      value={formData.config.body || ''}
+                      value={config.body || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, body: e.target.value }
+                        config: { ...config, body: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                       rows={6}
@@ -885,10 +893,13 @@ export function DatasourceModal({
                   )}
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             {/* Configurações específicas para MongoDB */}
-            {formData.type === 'mongodb' && (
+            {formData.type === 'mongodb' && (() => {
+              const config = formData.config as MongoDbConfig
+              return (
               <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold text-lg">Configuração MongoDB</h3>
                 
@@ -898,10 +909,10 @@ export function DatasourceModal({
                   </label>
                   <input
                     type="text"
-                    value={formData.config.connectionString || ''}
+                    value={config.connectionString || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      config: { ...formData.config, connectionString: e.target.value }
+                      config: { ...config, connectionString: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     placeholder="mongodb://username:password@host:27017"
@@ -915,10 +926,10 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="text"
-                      value={formData.config.database || ''}
+                      value={config.database || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, database: e.target.value }
+                        config: { ...config, database: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="myDatabase"
@@ -931,10 +942,10 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="text"
-                      value={formData.config.collection || ''}
+                      value={config.collection || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, collection: e.target.value }
+                        config: { ...config, collection: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="myCollection"
@@ -950,20 +961,20 @@ export function DatasourceModal({
                     Filtro MongoDB em formato JSON (opcional, vazio = todos os documentos)
                   </p>
                   <textarea
-                    value={typeof formData.config.query === 'object' 
-                      ? JSON.stringify(formData.config.query, null, 2)
-                      : formData.config.query || '{}'}
+                    value={typeof config.query === 'object' 
+                      ? JSON.stringify(config.query, null, 2)
+                      : config.query || '{}'}
                     onChange={(e) => {
                       try {
                         const parsed = JSON.parse(e.target.value);
                         setFormData({
                           ...formData,
-                          config: { ...formData.config, query: parsed }
+                          config: { ...config, query: parsed }
                         });
                       } catch {
                         setFormData({
                           ...formData,
-                          config: { ...formData.config, query: e.target.value }
+                          config: { ...config, query: e.target.value }
                         });
                       }
                     }}
@@ -981,20 +992,20 @@ export function DatasourceModal({
                     Campos a retornar (opcional, vazio = todos os campos)
                   </p>
                   <textarea
-                    value={typeof formData.config.projection === 'object'
-                      ? JSON.stringify(formData.config.projection, null, 2)
-                      : formData.config.projection || '{}'}
+                    value={typeof config.projection === 'object'
+                      ? JSON.stringify(config.projection, null, 2)
+                      : config.projection || '{}'}
                     onChange={(e) => {
                       try {
                         const parsed = JSON.parse(e.target.value);
                         setFormData({
                           ...formData,
-                          config: { ...formData.config, projection: parsed }
+                          config: { ...config, projection: parsed }
                         });
                       } catch {
                         setFormData({
                           ...formData,
-                          config: { ...formData.config, projection: e.target.value }
+                          config: { ...config, projection: e.target.value }
                         });
                       }
                     }}
@@ -1004,10 +1015,13 @@ export function DatasourceModal({
                   />
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             {/* Configurações específicas para SQL */}
-            {formData.type === 'sql' && (
+            {formData.type === 'sql' && (() => {
+              const config = formData.config as SqlConfig
+              return (
               <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold text-lg">Configuração SQL Database</h3>
                 
@@ -1016,15 +1030,16 @@ export function DatasourceModal({
                     Engine *
                   </label>
                   <select
-                    value={formData.config.engine || 'postgresql'}
+                    value={config.engine || 'postgres'}
                     onChange={(e) => setFormData({
                       ...formData,
-                      config: { ...formData.config, engine: e.target.value }
+                      config: { ...config, engine: e.target.value as 'postgres' | 'mysql' | 'mssql' }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="postgresql">PostgreSQL</option>
+                    <option value="postgres">PostgreSQL</option>
                     <option value="mysql">MySQL</option>
+                    <option value="mssql">MS SQL Server</option>
                   </select>
                 </div>
 
@@ -1035,10 +1050,10 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="text"
-                      value={formData.config.host || ''}
+                      value={config.host || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, host: e.target.value }
+                        config: { ...config, host: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="localhost"
@@ -1051,13 +1066,13 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="number"
-                      value={formData.config.port || ''}
+                      value={config.port || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, port: parseInt(e.target.value) || undefined }
+                        config: { ...config, port: parseInt(e.target.value) || 5432 }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder={formData.config.engine === 'mysql' ? '3306' : '5432'}
+                      placeholder={config.engine === 'mysql' ? '3306' : '5432'}
                     />
                   </div>
                 </div>
@@ -1069,10 +1084,10 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="text"
-                      value={formData.config.database || ''}
+                      value={config.database || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, database: e.target.value }
+                        config: { ...config, database: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="myDatabase"
@@ -1085,10 +1100,10 @@ export function DatasourceModal({
                     </label>
                     <input
                       type="text"
-                      value={formData.config.username || ''}
+                      value={config.username || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        config: { ...formData.config, username: e.target.value }
+                        config: { ...config, username: e.target.value }
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="postgres"
@@ -1102,10 +1117,10 @@ export function DatasourceModal({
                   </label>
                   <input
                     type="password"
-                    value={formData.config.password || ''}
+                    value={config.password || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      config: { ...formData.config, password: e.target.value }
+                      config: { ...config, password: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="••••••••"
@@ -1120,10 +1135,10 @@ export function DatasourceModal({
                     Query SQL para buscar os dados (SELECT)
                   </p>
                   <textarea
-                    value={formData.config.query || ''}
+                    value={config.query || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      config: { ...formData.config, query: e.target.value }
+                      config: { ...config, query: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     rows={4}
@@ -1135,10 +1150,10 @@ export function DatasourceModal({
                   <input
                     type="checkbox"
                     id="ssl"
-                    checked={formData.config.ssl || false}
+                    checked={config.ssl || false}
                     onChange={(e) => setFormData({
                       ...formData,
-                      config: { ...formData.config, ssl: e.target.checked }
+                      config: { ...config, ssl: e.target.checked }
                     })}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
@@ -1147,7 +1162,8 @@ export function DatasourceModal({
                   </label>
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             {/* Configurações de Sincronização */}
             {(formData.type === 'rest_api' || formData.type === 'mongodb' || formData.type === 'sql') && (
