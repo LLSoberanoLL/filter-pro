@@ -18,7 +18,7 @@ const fastify = Fastify({
   } 
 });
 
-// Swagger configuration - MUST be registered before routes
+// Swagger/OpenAPI configuration
 fastify.register(fastifySwagger, {
   openapi: {
     info: {
@@ -49,7 +49,6 @@ fastify.register(fastifySwagger, {
       { name: 'Query', description: 'Gerador de queries MongoDB' },
     ],
   },
-  exposeRoute: true,
 });
 
 // Enable CORS for all origins - MUST be before other routes
@@ -106,6 +105,32 @@ fastify.register(filterOptionsRoutes);
 // Admin routes
 import adminRoutes from './routes/admin';
 fastify.register(adminRoutes);
+
+// Scalar API Documentation - Serve HTML page with Scalar via CDN
+fastify.get('/documentation', async (request, reply) => {
+  reply.type('text/html');
+  return `
+<!doctype html>
+<html>
+  <head>
+    <title>FilterPro API Documentation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script
+      id="api-reference"
+      data-url="/documentation/json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>
+  `;
+});
+
+// OpenAPI JSON endpoint
+fastify.get('/documentation/json', async (request, reply) => {
+  return fastify.swagger();
+});
 
 // Import cron service
 import { DatasourceCronService } from './services/DatasourceCronService';
