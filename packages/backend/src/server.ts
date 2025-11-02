@@ -1,7 +1,6 @@
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUi from '@fastify/swagger-ui';
 import dotenv from 'dotenv';
 
 import { connectDb } from './models';
@@ -50,16 +49,7 @@ fastify.register(fastifySwagger, {
       { name: 'Query', description: 'Gerador de queries MongoDB' },
     ],
   },
-}).after(() => {
-  fastify.register(fastifySwaggerUi, {
-    routePrefix: '/documentation',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking: true,
-    },
-    staticCSP: true,
-    transformStaticCSP: (header) => header,
-  });
+  exposeRoute: true,
 });
 
 // Enable CORS for all origins - MUST be before other routes
