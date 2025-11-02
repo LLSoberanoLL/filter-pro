@@ -728,16 +728,20 @@ export class FilterPro extends LitElement {
     }
   }
 
-  private selectAllSuperFilter(filterSlug: string) {
+  private toggleSelectAllSuperFilter(filterSlug: string) {
     const filter = this.filters.find(f => f.slug === filterSlug)
     if (!filter) return
     
     const options = this.getFilterOptions(filter)
+    const current = this.superFilterSelections[filterSlug] || []
+    const allValues = options.map(opt => String(opt.value))
     
-    // Seleciona todas as opções disponíveis
+    // Se todos estão selecionados, desmarca todos. Senão, seleciona todos
+    const allSelected = allValues.length > 0 && allValues.every(v => current.includes(v))
+    
     this.superFilterSelections = {
       ...this.superFilterSelections,
-      [filterSlug]: options.map(opt => String(opt.value))
+      [filterSlug]: allSelected ? [] : allValues
     }
   }
 
@@ -1124,6 +1128,10 @@ export class FilterPro extends LitElement {
       filteredOptions = filteredOptions.filter(opt => selections.includes(String(opt.value)))
     }
 
+    // Verifica se todos os itens visíveis estão selecionados
+    const allValues = options.map(opt => String(opt.value))
+    const allSelected = allValues.length > 0 && allValues.every(v => selections.includes(v))
+
     return html`
       <div class="modal-overlay" @click=${() => this.closeSuperFilter()}>
         <div class="modal-content" @click=${(e: Event) => e.stopPropagation()}>
@@ -1150,10 +1158,10 @@ export class FilterPro extends LitElement {
 
             <div class="modal-controls">
               <button
-                class="modal-control-btn"
-                @click=${() => this.selectAllSuperFilter(this.superFilterOpen!)}
+                class="modal-control-btn ${allSelected ? 'active' : ''}"
+                @click=${() => this.toggleSelectAllSuperFilter(this.superFilterOpen!)}
               >
-                ✓ Selecionar todos
+                ${allSelected ? '✕' : '✓'} ${allSelected ? 'Desmarcar todos' : 'Selecionar todos'}
               </button>
               <button
                 class="modal-control-btn ${showOnlySelected ? 'active' : ''}"
