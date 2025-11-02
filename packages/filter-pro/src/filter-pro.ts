@@ -487,6 +487,11 @@ export class FilterPro extends LitElement {
     .custom-select-wrapper {
       position: relative;
       width: 100%;
+      z-index: 1;
+    }
+
+    .custom-select-wrapper.open {
+      z-index: 1001;
     }
 
     .custom-select-trigger {
@@ -535,7 +540,7 @@ export class FilterPro extends LitElement {
       border: 1px solid #ced4da;
       border-radius: 4px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      z-index: 1000;
+      z-index: 1002;
       max-height: 300px;
       display: flex;
       flex-direction: column;
@@ -648,10 +653,11 @@ export class FilterPro extends LitElement {
     document.removeEventListener('click', this.handleOutsideClick)
   }
 
-  private handleOutsideClick(e: Event) {
-    const target = e.target as HTMLElement
-    if (!this.shadowRoot?.contains(target)) {
+  private handleOutsideClick(_e: Event) {
+    // Fecha o dropdown se clicar fora do componente
+    if (this.customSelectOpen) {
       this.customSelectOpen = null
+      this.requestUpdate()
     }
   }
 
@@ -1158,11 +1164,12 @@ export class FilterPro extends LitElement {
           </button>
           
           <div class="filter-input-wrapper">
-            <div class="custom-select-wrapper">
+            <div class="custom-select-wrapper ${isOpen ? 'open' : ''}">
               <!-- Trigger button -->
               <div
                 class="custom-select-trigger ${isOpen ? 'open' : ''}"
-                @click=${() => {
+                @click=${(e: Event) => {
+                  e.stopPropagation()
                   if (isOpen) {
                     this.customSelectOpen = null
                   } else {
@@ -1180,7 +1187,7 @@ export class FilterPro extends LitElement {
               
               <!-- Dropdown -->
               ${isOpen ? html`
-                <div class="custom-select-dropdown">
+                <div class="custom-select-dropdown" @click=${(e: Event) => e.stopPropagation()}>
                   <!-- Barra de pesquisa -->
                   <div class="custom-select-search">
                     <input
@@ -1195,7 +1202,6 @@ export class FilterPro extends LitElement {
                           [filter.slug]: target.value
                         }
                       }}
-                      @click=${(e: Event) => e.stopPropagation()}
                     />
                   </div>
                   
