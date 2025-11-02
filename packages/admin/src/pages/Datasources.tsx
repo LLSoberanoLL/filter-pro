@@ -3,67 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { DatasourceModal } from '../components/modals/DatasourceModal'
 import { useApi } from '../hooks/useApi'
-
-interface Datasource {
-  _id: string
-  projectKey: string
-  id: string
-  name: string
-  type: 'rest_api' | 'mongodb' | 'sql' | 'static'
-  config: {
-    baseUrl?: string
-    method?: string
-    headers?: Record<string, string>
-    auth?: {
-      type: 'none' | 'bearer' | 'basic' | 'apikey'
-      token?: string
-      username?: string
-      password?: string
-      apiKey?: string
-      apiKeyHeader?: string
-    }
-    body?: string
-    queryParams?: Record<string, string>
-    responsePath?: string
-  }
-  enabled?: boolean
-  syncConfig?: {
-    enabled: boolean
-    interval: '5m' | '15m' | '1h' | '6h' | '24h'
-    externalCodeField?: string
-    labelField?: string
-    valueField?: string
-  }
-  lastSync?: {
-    date: string
-    status: 'success' | 'error'
-    stats?: {
-      recordsFound: number
-      recordsAdded: number
-      recordsUpdated: number
-      recordsDisabled: number
-    }
-    error?: string
-  }
-  createdAt: string
-  updatedAt: string
-}
-
-interface DatasourceFormData {
-  projectKey: string
-  id: string
-  name: string
-  type: 'rest_api' | 'mongodb' | 'sql' | 'static'
-  config: Datasource['config']
-  enabled?: boolean
-  syncConfig?: {
-    enabled: boolean
-    interval: '5m' | '15m' | '1h' | '6h' | '24h'
-    externalCodeField?: string
-    labelField?: string
-    valueField?: string
-  }
-}
+import type { Datasource, DatasourceFormData } from '../types/datasource'
 
 export function Datasources() {
   const { projectKey } = useParams<{ projectKey: string }>()
@@ -159,10 +99,9 @@ export function Datasources() {
 
   const getAuthLabel = (authType?: string) => {
     switch (authType) {
-      case 'none': return 'Sem autenticação'
       case 'bearer': return 'Bearer Token'
       case 'basic': return 'Basic Auth'
-      case 'apikey': return 'API Key'
+      case 'api_key': return 'API Key'
       default: return 'Não configurado'
     }
   }
@@ -248,7 +187,7 @@ export function Datasources() {
                   </div>
                   
                   <div className="space-y-2 text-sm">
-                    {datasource.config.baseUrl && (
+                    {datasource.type === 'rest_api' && 'baseUrl' in datasource.config && datasource.config.baseUrl && (
                       <div className="text-gray-600">
                         <span className="font-medium">URL:</span>{' '}
                         <code className="bg-gray-100 px-2 py-1 rounded text-xs">
@@ -257,7 +196,7 @@ export function Datasources() {
                       </div>
                     )}
                     
-                    {datasource.config.method && (
+                    {datasource.type === 'rest_api' && 'method' in datasource.config && datasource.config.method && (
                       <div className="text-gray-600">
                         <span className="font-medium">Método:</span>{' '}
                         <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
@@ -266,7 +205,7 @@ export function Datasources() {
                       </div>
                     )}
                     
-                    {datasource.config.auth && (
+                    {datasource.type === 'rest_api' && 'auth' in datasource.config && datasource.config.auth && (
                       <div className="text-gray-600">
                         <span className="font-medium">Autenticação:</span>{' '}
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
@@ -275,7 +214,7 @@ export function Datasources() {
                       </div>
                     )}
                     
-                    {datasource.config.headers && Object.keys(datasource.config.headers).length > 0 && (
+                    {datasource.type === 'rest_api' && 'headers' in datasource.config && datasource.config.headers && Object.keys(datasource.config.headers).length > 0 && (
                       <div className="text-gray-600">
                         <span className="font-medium">Headers:</span>{' '}
                         <span className="text-xs">{Object.keys(datasource.config.headers).length} configurados</span>
