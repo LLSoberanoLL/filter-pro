@@ -371,6 +371,16 @@ export class FilterPro extends LitElement {
       border-color: #adb5bd;
     }
 
+    .modal-control-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: #667eea;
+    }
+
+    .modal-control-btn.active:hover {
+      opacity: 0.9;
+    }
+
     .modal-options-list {
       max-height: 300px;
       overflow-y: auto;
@@ -509,6 +519,9 @@ export class FilterPro extends LitElement {
 
   @state()
   private superFilterSearch: Record<string, string> = {}  // Termo de pesquisa por filtro
+
+  @state()
+  private superFilterShowOnlySelected: Record<string, boolean> = {}  // Mostra apenas selecionados
 
   connectedCallback() {
     super.connectedCallback()
@@ -693,6 +706,13 @@ export class FilterPro extends LitElement {
   }
 
   private closeSuperFilter() {
+    if (this.superFilterOpen) {
+      // Limpa o estado de "mostrar apenas selecionados" ao fechar
+      this.superFilterShowOnlySelected = {
+        ...this.superFilterShowOnlySelected,
+        [this.superFilterOpen]: false
+      }
+    }
     this.superFilterOpen = null
   }
 
@@ -709,28 +729,23 @@ export class FilterPro extends LitElement {
   }
 
   private selectAllSuperFilter(filterSlug: string) {
-    this.superFilterSelections = {
-      ...this.superFilterSelections,
-      [filterSlug]: []
-    }
-  }
-
-  private selectOnlySuperFilter(filterSlug: string) {
     const filter = this.filters.find(f => f.slug === filterSlug)
     if (!filter) return
     
     const options = this.getFilterOptions(filter)
-    const searchTerm = this.superFilterSearch[filterSlug] || ''
-    const filteredOptions = searchTerm
-      ? options.filter(opt => 
-          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : options
     
+    // Seleciona todas as opções disponíveis
     this.superFilterSelections = {
       ...this.superFilterSelections,
-      [filterSlug]: filteredOptions.map(opt => String(opt.value))
+      [filterSlug]: options.map(opt => String(opt.value))
+    }
+  }
+
+  private toggleShowOnlySelected(filterSlug: string) {
+    const currentState = this.superFilterShowOnlySelected[filterSlug] || false
+    this.superFilterShowOnlySelected = {
+      ...this.superFilterShowOnlySelected,
+      [filterSlug]: !currentState
     }
   }
 
@@ -1094,13 +1109,20 @@ export class FilterPro extends LitElement {
     const options = this.getFilterOptions(filter)
     const selections = this.superFilterSelections[this.superFilterOpen] || []
     const searchTerm = this.superFilterSearch[this.superFilterOpen] || ''
+    const showOnlySelected = this.superFilterShowOnlySelected[this.superFilterOpen] || false
     
-    const filteredOptions = searchTerm
+    // Primeiro filtra pela pesquisa
+    let filteredOptions = searchTerm
       ? options.filter(opt => 
           opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
           String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       : options
+    
+    // Depois filtra por "apenas selecionados" se ativo
+    if (showOnlySelected) {
+      filteredOptions = filteredOptions.filter(opt => selections.includes(String(opt.value)))
+    }
 
     return html`
       <div class="modal-overlay" @click=${() => this.closeSuperFilter()}>
@@ -1134,10 +1156,10 @@ export class FilterPro extends LitElement {
                 ✓ Selecionar todos
               </button>
               <button
-                class="modal-control-btn"
-                @click=${() => this.selectOnlySuperFilter(this.superFilterOpen!)}
+                class="modal-control-btn ${showOnlySelected ? 'active' : ''}"
+                @click=${() => this.toggleShowOnlySelected(this.superFilterOpen!)}
               >
-                ⚡ Apenas selecionados
+                ${showOnlySelected ? '👁️' : '⚡'} Apenas selecionados
               </button>
             </div>
 
