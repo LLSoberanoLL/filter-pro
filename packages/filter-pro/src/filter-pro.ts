@@ -200,6 +200,277 @@ export class FilterPro extends LitElement {
       font-size: 14px;
       font-style: italic;
     }
+
+    /* Super Filter Styles */
+    .filter-with-super {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .filter-with-super .filter-input-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .super-filter-btn {
+      padding: 8px 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+      margin-top: 22px;
+    }
+
+    .super-filter-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .super-filter-btn:active {
+      transform: translateY(0);
+    }
+
+    .super-filter-badge {
+      background: #fff;
+      color: #667eea;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Modal Content */
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: #f8f9fa;
+      color: #495057;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-search {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s ease;
+    }
+
+    .modal-search:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .modal-controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .modal-control-btn {
+      padding: 6px 12px;
+      border: 1px solid #dee2e6;
+      background: white;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-control-btn:hover {
+      background: #f8f9fa;
+      border-color: #adb5bd;
+    }
+
+    .modal-options-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .modal-option {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .modal-option:hover {
+      background-color: #f8f9fa;
+    }
+
+    .modal-option.selected {
+      background-color: #e7f3ff;
+    }
+
+    .modal-option input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+    }
+
+    .modal-option-label {
+      flex: 1;
+      font-size: 14px;
+      color: #495057;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .modal-footer-info {
+      font-size: 13px;
+      color: #6c757d;
+    }
+
+    .modal-footer-count {
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .modal-footer-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn-cancel {
+      background: white;
+      color: #6c757d;
+      border: 1px solid #dee2e6;
+    }
+
+    .modal-btn-cancel:hover {
+      background: #f8f9fa;
+    }
+
+    .modal-btn-apply {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .modal-btn-apply:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .modal-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6c757d;
+    }
+
+    .modal-empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
   `
 
   @property({ type: String })
@@ -228,6 +499,15 @@ export class FilterPro extends LitElement {
 
   @state()
   private searchTerms: Record<string, string> = {}
+
+  @state()
+  private superFilterOpen: string | null = null  // Slug do filtro com modal aberto
+
+  @state()
+  private superFilterSelections: Record<string, string[]> = {}  // Valores selecionados por filtro
+
+  @state()
+  private superFilterSearch: Record<string, string> = {}  // Termo de pesquisa por filtro
 
   connectedCallback() {
     super.connectedCallback()
@@ -399,6 +679,75 @@ export class FilterPro extends LitElement {
     return filter.slug
   }
 
+  // Super Filter Methods
+  private openSuperFilter(filterSlug: string) {
+    this.superFilterOpen = filterSlug
+    // Inicializar seleções se não existir
+    if (!this.superFilterSelections[filterSlug]) {
+      this.superFilterSelections = {
+        ...this.superFilterSelections,
+        [filterSlug]: []
+      }
+    }
+  }
+
+  private closeSuperFilter() {
+    this.superFilterOpen = null
+  }
+
+  private toggleSuperFilterOption(filterSlug: string, value: string) {
+    const current = this.superFilterSelections[filterSlug] || []
+    const newSelections = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value]
+    
+    this.superFilterSelections = {
+      ...this.superFilterSelections,
+      [filterSlug]: newSelections
+    }
+  }
+
+  private selectAllSuperFilter(filterSlug: string) {
+    this.superFilterSelections = {
+      ...this.superFilterSelections,
+      [filterSlug]: []
+    }
+  }
+
+  private selectOnlySuperFilter(filterSlug: string) {
+    const filter = this.filters.find(f => f.slug === filterSlug)
+    if (!filter) return
+    
+    const options = this.getFilterOptions(filter)
+    const searchTerm = this.superFilterSearch[filterSlug] || ''
+    const filteredOptions = searchTerm
+      ? options.filter(opt => 
+          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : options
+    
+    this.superFilterSelections = {
+      ...this.superFilterSelections,
+      [filterSlug]: filteredOptions.map(opt => String(opt.value))
+    }
+  }
+
+  private applySuperFilter(filterSlug: string) {
+    const selections = this.superFilterSelections[filterSlug] || []
+    
+    // Se não tem seleção ou todos estão selecionados, considera como "todos"
+    // Nesse caso, limpa o filtro (não envia query parameter)
+    if (selections.length === 0) {
+      this.onFilterChange(filterSlug, '')
+    } else {
+      // Envia apenas os selecionados
+      this.onFilterChange(filterSlug, selections)
+    }
+    
+    this.closeSuperFilter()
+  }
+
   private async onFilterChange(filterSlug: string, value: any) {
     const newValues = { ...this.filterValues, [filterSlug]: value }
     this.filterValues = newValues
@@ -506,29 +855,48 @@ export class FilterPro extends LitElement {
   private renderSelectFilter(filter: Filter, value: string) {
     const options = this.getFilterOptions(filter)
     const isSearchable = filter.uiConfig?.searchable
+    const hasSuperFilter = filter.uiConfig?.searchable  // Super filtro disponível quando searchable
     
-    if (isSearchable) {
+    if (isSearchable && !hasSuperFilter) {
       return this.renderSearchableSelect(filter, value, options)
     }
+    
+    const selectedCount = this.superFilterSelections[filter.slug]?.length || 0
+    const hasSelection = selectedCount > 0
     
     return html`
       <div class="filter-group">
         <label class="filter-label">${filter.name}</label>
-        <select
-          class="filter-input"
-          .value=${value}
-          @change=${(e: Event) => {
-            const target = e.target as HTMLSelectElement
-            this.onFilterChange(filter.slug, target.value)
-          }}
-        >
-          <option value="">Selecione...</option>
-          ${options.map(option => html`
-            <option value=${option.value} ?selected=${option.value === value}>
-              ${option.label}
-            </option>
-          `)}
-        </select>
+        <div class="filter-with-super">
+          <div class="filter-input-wrapper">
+            <select
+              class="filter-input"
+              .value=${value}
+              @change=${(e: Event) => {
+                const target = e.target as HTMLSelectElement
+                this.onFilterChange(filter.slug, target.value)
+              }}
+              ?disabled=${hasSelection}
+            >
+              <option value="">${hasSelection ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}` : 'Todos'}</option>
+              ${!hasSelection ? options.map(option => html`
+                <option value=${option.value} ?selected=${option.value === value}>
+                  ${option.label}
+                </option>
+              `) : ''}
+            </select>
+          </div>
+          ${hasSuperFilter ? html`
+            <button
+              class="super-filter-btn"
+              @click=${() => this.openSuperFilter(filter.slug)}
+              title="Abrir super filtro"
+            >
+              ⚡ Filtrar
+              ${hasSelection ? html`<span class="super-filter-badge">${selectedCount}</span>` : ''}
+            </button>
+          ` : ''}
+        </div>
       </div>
     `
   }
@@ -716,6 +1084,107 @@ export class FilterPro extends LitElement {
     `
   }
 
+  private renderSuperFilterModal() {
+    if (!this.superFilterOpen) return ''
+
+    const filter = this.filters.find(f => f.slug === this.superFilterOpen)
+    if (!filter) return ''
+
+    const options = this.getFilterOptions(filter)
+    const selections = this.superFilterSelections[this.superFilterOpen] || []
+    const searchTerm = this.superFilterSearch[this.superFilterOpen] || ''
+    
+    const filteredOptions = searchTerm
+      ? options.filter(opt => 
+          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : options
+
+    return html`
+      <div class="modal-overlay" @click=${() => this.closeSuperFilter()}>
+        <div class="modal-content" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="modal-header">
+            <div class="modal-title">🔍 Filtrar ${filter.name}</div>
+            <button class="modal-close" @click=${() => this.closeSuperFilter()}>×</button>
+          </div>
+
+          <div class="modal-body">
+            <input
+              type="text"
+              class="modal-search"
+              placeholder="🔍 Pesquisar..."
+              .value=${searchTerm}
+              @input=${(e: Event) => {
+                const target = e.target as HTMLInputElement
+                this.superFilterSearch = {
+                  ...this.superFilterSearch,
+                  [this.superFilterOpen!]: target.value
+                }
+                this.requestUpdate()
+              }}
+            />
+
+            <div class="modal-controls">
+              <button
+                class="modal-control-btn"
+                @click=${() => this.selectAllSuperFilter(this.superFilterOpen!)}
+              >
+                ✓ Selecionar todos
+              </button>
+              <button
+                class="modal-control-btn"
+                @click=${() => this.selectOnlySuperFilter(this.superFilterOpen!)}
+              >
+                ⚡ Apenas selecionados
+              </button>
+            </div>
+
+            ${filteredOptions.length > 0 ? html`
+              <div class="modal-options-list">
+                ${filteredOptions.map(option => {
+                  const isSelected = selections.includes(String(option.value))
+                  return html`
+                    <label class="modal-option ${isSelected ? 'selected' : ''}">
+                      <input
+                        type="checkbox"
+                        .checked=${isSelected}
+                        @change=${() => this.toggleSuperFilterOption(this.superFilterOpen!, String(option.value))}
+                      />
+                      <span class="modal-option-label">${option.label}</span>
+                    </label>
+                  `
+                })}
+              </div>
+            ` : html`
+              <div class="modal-empty">
+                <div class="modal-empty-icon">🔍</div>
+                <div>Nenhum resultado encontrado</div>
+              </div>
+            `}
+          </div>
+
+          <div class="modal-footer">
+            <div class="modal-footer-info">
+              ${selections.length === 0 
+                ? 'Todos selecionados' 
+                : html`<span class="modal-footer-count">${selections.length}</span> de ${options.length} selecionados`
+              }
+            </div>
+            <div class="modal-footer-actions">
+              <button class="modal-btn modal-btn-cancel" @click=${() => this.closeSuperFilter()}>
+                Cancelar
+              </button>
+              <button class="modal-btn modal-btn-apply" @click=${() => this.applySuperFilter(this.superFilterOpen!)}>
+                Aplicar Filtro
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
   render() {
     console.log('FilterPro: Renderizando...', {
       loading: this.loading,
@@ -746,6 +1215,7 @@ export class FilterPro extends LitElement {
       <div class="filter-container">
         ${this.filters.map(filter => this.renderFilter(filter))}
       </div>
+      ${this.renderSuperFilterModal()}
     `
   }
 }
