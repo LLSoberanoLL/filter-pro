@@ -1019,8 +1019,7 @@ export class FilterPro extends LitElement {
 
   private renderSelectFilter(filter: Filter, value: string) {
     const allOptions = this.getFilterOptions(filter)
-    const isSearchable = filter.uiConfig?.searchable
-    const hasSuperFilter = filter.uiConfig?.searchable
+    const hasSuperFilter = filter.uiConfig?.searchable  // Super filtro só aparece quando searchable: true
     
     // Se tem super filtro ativo, filtra as opções do select
     const superFilterSelections = this.superFilterSelections[filter.slug] || []
@@ -1031,114 +1030,11 @@ export class FilterPro extends LitElement {
       ? allOptions.filter(opt => superFilterSelections.includes(String(opt.value)))
       : allOptions
     
-    // Se é searchable, usa select customizado com pesquisa
-    if (isSearchable) {
-      return this.renderCustomSelectWithSearch(filter, value, options, hasSuperFilterActive)
-    }
-    
-    // Select simples sem pesquisa
-    return html`
-      <div class="filter-group">
-        <label class="filter-label">${filter.name}</label>
-        <div class="filter-with-super">
-          ${hasSuperFilter ? html`
-            <button
-              class="super-filter-btn"
-              @click=${() => this.openSuperFilter(filter.slug)}
-              title="Abrir super filtro"
-            >
-              ⚡ Filtrar
-              ${hasSuperFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
-            </button>
-          ` : ''}
-          <div class="filter-input-wrapper">
-            <select
-              class="filter-input"
-              .value=${value}
-              @change=${(e: Event) => {
-                const target = e.target as HTMLSelectElement
-                this.onFilterChange(filter.slug, target.value)
-              }}
-            >
-              <option value="">Todos</option>
-              ${options.map(option => html`
-                <option value=${option.value} ?selected=${option.value === value}>
-                  ${option.label}
-                </option>
-              `)}
-            </select>
-          </div>
-        </div>
-      </div>
-    `
+    // SEMPRE usa select customizado com pesquisa (para todos os selects)
+    return this.renderCustomSelectWithSearch(filter, value, options, hasSuperFilterActive, hasSuperFilter)
   }
 
-  private renderSearchableSelectWithSuperFilter(filter: Filter, value: string, selectOptions: FilterOption[], hasSupFilterActive: boolean) {
-    const searchTerm = this.searchTerms[filter.slug] || ''
-    const filteredOptions = searchTerm
-      ? selectOptions.filter(opt => 
-          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : selectOptions
-
-    const superFilterSelections = this.superFilterSelections[filter.slug] || []
-
-    return html`
-      <div class="filter-group">
-        <label class="filter-label">${filter.name}</label>
-        <div class="filter-with-super">
-          <button
-            class="super-filter-btn"
-            @click=${() => this.openSuperFilter(filter.slug)}
-            title="Abrir super filtro"
-          >
-            ⚡ Filtrar
-            ${hasSupFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
-          </button>
-          <div class="filter-input-wrapper searchable-select">
-            <input
-              type="text"
-              class="filter-input search-input"
-              placeholder="🔍 Pesquisar..."
-              .value=${searchTerm}
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement
-                this.searchTerms = {
-                  ...this.searchTerms,
-                  [filter.slug]: target.value
-                }
-                this.requestUpdate()
-              }}
-            />
-            <select
-              class="filter-input"
-              size="5"
-              .value=${value}
-              @change=${(e: Event) => {
-                const target = e.target as HTMLSelectElement
-                this.onFilterChange(filter.slug, target.value)
-                this.searchTerms = { ...this.searchTerms, [filter.slug]: '' }
-                this.requestUpdate()
-              }}
-            >
-              <option value="">Todos</option>
-              ${filteredOptions.map(option => html`
-                <option value=${option.value} ?selected=${option.value === value}>
-                  ${option.label}
-                </option>
-              `)}
-            </select>
-            ${filteredOptions.length === 0 ? html`
-              <div class="no-results">Nenhum resultado encontrado</div>
-            ` : ''}
-          </div>
-        </div>
-      </div>
-    `
-  }
-
-  private renderCustomSelectWithSearch(filter: Filter, value: string, options: FilterOption[], hasSuperFilterActive: boolean) {
+  private renderCustomSelectWithSearch(filter: Filter, value: string, options: FilterOption[], hasSuperFilterActive: boolean, hasSuperFilter: boolean = false) {
     const isOpen = this.customSelectOpen === filter.slug
     const searchTerm = this.customSelectSearch[filter.slug] || ''
     const superFilterSelections = this.superFilterSelections[filter.slug] || []
@@ -1159,14 +1055,16 @@ export class FilterPro extends LitElement {
       <div class="filter-group">
         <label class="filter-label">${filter.name}</label>
         <div class="filter-with-super">
-          <button
-            class="super-filter-btn"
-            @click=${() => this.openSuperFilter(filter.slug)}
-            title="Abrir super filtro"
-          >
-            ⚡ Filtrar
-            ${hasSuperFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
-          </button>
+          ${hasSuperFilter ? html`
+            <button
+              class="super-filter-btn"
+              @click=${() => this.openSuperFilter(filter.slug)}
+              title="Abrir super filtro"
+            >
+              ⚡ Filtrar
+              ${hasSuperFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
+            </button>
+          ` : ''}
           
           <div class="custom-select-wrapper ${isOpen ? 'open' : ''}">
             <!-- Trigger button -->
@@ -1246,59 +1144,6 @@ export class FilterPro extends LitElement {
                 </div>
               ` : ''}
           </div>
-        </div>
-      </div>
-    `
-  }
-
-  private renderSearchableSelect(filter: Filter, value: string, allOptions: FilterOption[]) {
-    const searchTerm = this.searchTerms[filter.slug] || ''
-    const filteredOptions = searchTerm
-      ? allOptions.filter(opt => 
-          opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          String(opt.value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : allOptions
-
-    return html`
-      <div class="filter-group">
-        <label class="filter-label">${filter.name}</label>
-        <div class="searchable-select">
-          <input
-            type="text"
-            class="filter-input search-input"
-            placeholder="🔍 Pesquisar..."
-            .value=${searchTerm}
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement
-              this.searchTerms = {
-                ...this.searchTerms,
-                [filter.slug]: target.value
-              }
-              this.requestUpdate()
-            }}
-          />
-          <select
-            class="filter-input"
-            size="5"
-            .value=${value}
-            @change=${(e: Event) => {
-              const target = e.target as HTMLSelectElement
-              this.onFilterChange(filter.slug, target.value)
-              this.searchTerms = { ...this.searchTerms, [filter.slug]: '' }
-              this.requestUpdate()
-            }}
-          >
-            <option value="">Limpar seleção</option>
-            ${filteredOptions.map(option => html`
-              <option value=${option.value} ?selected=${option.value === value}>
-                ${option.label}
-              </option>
-            `)}
-          </select>
-          ${filteredOptions.length === 0 ? html`
-            <div class="no-results">Nenhum resultado encontrado</div>
-          ` : ''}
         </div>
       </div>
     `
