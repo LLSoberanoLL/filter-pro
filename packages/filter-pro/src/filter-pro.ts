@@ -10,6 +10,7 @@ export interface Filter {
   _id: string
   projectKey: string
   slug: string
+  queryKey?: string  // Key alternativa para usar na query (sobrescreve slug)
   name: string
   type: 'select' | 'multiselect' | 'range' | 'text'
   active: boolean

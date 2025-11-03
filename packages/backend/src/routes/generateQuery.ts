@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { Filter } from '../models/Filter';
 
 const GenerateSchema = z.object({ 
   filters: z.record(z.any()),
@@ -27,13 +28,21 @@ export default async function (fastify: FastifyInstance) {
     const { filters, options } = parsed.data;
     const query: any = {};
     
+    // Buscar todos os filtros do projeto para obter queryKey
+    const filterConfigs = await Filter.find({ projectKey }).lean();
+    const filterMap = new Map(filterConfigs.map(f => [f.slug, f]));
+    
     // Convert filters to MongoDB query
     for (const [key, value] of Object.entries(filters || {})) {
       if (value == null || value === '') continue;
       
+      // Usar queryKey se disponível, senão usar o slug
+      const filterConfig = filterMap.get(key);
+      const queryKey = filterConfig?.queryKey || key;
+      
       // Handle arrays -> $in
       if (Array.isArray(value)) {
-        query[key] = { $in: value };
+        query[queryKey] = { $in: value };
       }
       // Handle range objects with from/to -> $gte/$lte
       else if (typeof value === 'object' && value !== null && ('from' in value || 'to' in value)) {
@@ -45,12 +54,12 @@ export default async function (fastify: FastifyInstance) {
           rangeQuery.$lte = value.to;
         }
         if (Object.keys(rangeQuery).length > 0) {
-          query[key] = rangeQuery;
+          query[queryKey] = rangeQuery;
         }
       }
       // Handle simple values
       else {
-        query[key] = value;
+        query[queryKey] = value;
       }
     }
     

@@ -4,6 +4,7 @@ const FilterSchema = new mongoose.Schema({
   projectKey: { type: String, required: true, index: true },
   name: { type: String, required: true },
   slug: { type: String, required: true },
+  queryKey: { type: String },                             // Key alternativa para usar na query (sobrescreve slug)
   description: { type: String },
   type: { type: String, required: true },
   dataSource: { type: mongoose.Schema.Types.Mixed },
