@@ -120,8 +120,9 @@ export default async function (fastify: FastifyInstance) {
               }).lean();
 
               if (!affectingDataList || affectingDataList.length === 0) {
-                console.log(`[FILTER-OPTIONS] Dados do filtro afetante não encontrados para values=${values.join(',')}`);
-                continue;
+                console.log(`[FILTER-OPTIONS] Dados do filtro afetante não encontrados para values=${values.join(',')} - retornando lista vazia`);
+                // Se não encontrou os valores do filtro afetante, não há resultados possíveis
+                return [];
               }
 
               console.log(`[FILTER-OPTIONS] ${affectingDataList.length} registros do filtro afetante encontrados`);

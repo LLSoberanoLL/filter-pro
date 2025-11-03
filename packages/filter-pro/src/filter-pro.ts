@@ -724,6 +724,15 @@ export class FilterPro extends LitElement {
   private async loadAllOptions() {
     for (const filter of this.filters) {
       if (filter.type === 'select') {
+        // Não carregar opções de filtros dependentes (affected-by) no carregamento inicial
+        // Eles serão carregados quando o filtro que os afeta tiver um valor
+        const hasAffectedByDependency = filter.dependencies?.some(dep => dep.mode === 'affected-by')
+        
+        if (hasAffectedByDependency) {
+          console.log(`⏭️ Skipping initial load for ${filter.slug} (has affected-by dependency)`)
+          continue
+        }
+        
         await this.loadOptionsForFilter(filter)
       }
     }
@@ -773,6 +782,7 @@ export class FilterPro extends LitElement {
                 const valueToSend = Array.isArray(sourceValue) 
                   ? sourceValue.join(',') 
                   : sourceValue
+                console.log(`📤 Adding query param: ${dep.filterSlug} = ${valueToSend} (original:`, sourceValue, ')')
                 queryParams.set(dep.filterSlug, valueToSend)
               }
             }
@@ -784,7 +794,8 @@ export class FilterPro extends LitElement {
           url,
           dependencies: filter.dependencies,
           currentValues: this.filterValues,
-          hasAnyDependencyValue
+          hasAnyDependencyValue,
+          queryParamsString: queryParams.toString()
         })
         
         const response = await fetch(url)
@@ -818,7 +829,14 @@ export class FilterPro extends LitElement {
       // Cache key baseado nos valores dos filtros dos quais este filtro depende
       const depValues = filter.dependencies
         .filter(dep => dep.mode === 'affected-by')
-        .map(dep => `${dep.filterSlug}:${this.filterValues[dep.filterSlug] || 'empty'}`)
+        .map(dep => {
+          const value = this.filterValues[dep.filterSlug]
+          // Normalizar arrays para string consistente
+          const normalizedValue = Array.isArray(value) 
+            ? value.sort().join(',')  // Sort para garantir mesma ordem
+            : value || 'empty'
+          return `${dep.filterSlug}:${normalizedValue}`
+        })
         .join('|')
       const cacheKey = `${filter.slug}_${depValues}`
       console.log('🔑 Cache key for', filter.slug, ':', cacheKey, {
@@ -998,7 +1016,14 @@ export class FilterPro extends LitElement {
 
   private getFilterOptions(filter: Filter): FilterOption[] {
     const cacheKey = this.buildCacheKey(filter)
-    return this.optionsCache[cacheKey] || []
+    const options = this.optionsCache[cacheKey] || []
+    console.log(`🎯 getFilterOptions for ${filter.slug}:`, {
+      cacheKey,
+      optionsCount: options.length,
+      hasCache: !!this.optionsCache[cacheKey],
+      allCacheKeys: Object.keys(this.optionsCache)
+    })
+    return options
   }
 
   private renderFilter(filter: Filter) {
@@ -1073,12 +1098,20 @@ export class FilterPro extends LitElement {
             <!-- Trigger button -->
             <div
               class="custom-select-trigger ${isOpen ? 'open' : ''}"
-              @click=${(e: Event) => {
+              @click=${async (e: Event) => {
                 e.stopPropagation()
                 if (isOpen) {
                   this.customSelectOpen = null
                 } else {
                   this.customSelectOpen = filter.slug
+                  
+                  // Se não tem opções no cache, carregar
+                  const cacheKey = this.buildCacheKey(filter)
+                  if (!this.optionsCache[cacheKey] && filter.optionsConfig?.dynamic) {
+                    console.log(`🔄 Loading options on dropdown open for ${filter.slug}`)
+                    await this.loadOptionsForFilter(filter)
+                  }
+                  
                   // Focus no input quando abrir
                   setTimeout(() => {
                     const input = this.shadowRoot?.querySelector(`#search-${filter.slug}`) as HTMLInputElement
