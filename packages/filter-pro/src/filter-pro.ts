@@ -54,6 +54,7 @@ export class FilterPro extends LitElement {
     :host {
       display: block;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: visible;
     }
 
     .filter-container {
@@ -64,6 +65,7 @@ export class FilterPro extends LitElement {
       background: #f8f9fa;
       border-radius: 8px;
       border: 1px solid #e9ecef;
+      overflow: visible;
     }
 
     .filter-group {
@@ -71,6 +73,7 @@ export class FilterPro extends LitElement {
       flex-direction: column;
       min-width: 200px;
       flex: 1;
+      overflow: visible;
     }
 
     .filter-label {
@@ -206,12 +209,14 @@ export class FilterPro extends LitElement {
       display: flex;
       gap: 8px;
       align-items: flex-end;
+      overflow: visible;
     }
 
     .filter-with-super .filter-input-wrapper {
       flex: 1;
       display: flex;
       flex-direction: column;
+      overflow: visible;
     }
 
     .super-filter-btn {
@@ -486,7 +491,7 @@ export class FilterPro extends LitElement {
     /* Custom Select with Search */
     .custom-select-wrapper {
       position: relative;
-      width: 100%;
+      flex: 1;
       z-index: 1;
     }
 
@@ -495,7 +500,6 @@ export class FilterPro extends LitElement {
     }
 
     .custom-select-trigger {
-      width: 100%;
       padding: 8px 32px 8px 12px;
       border: 1px solid #ced4da;
       border-radius: 4px;
@@ -547,6 +551,7 @@ export class FilterPro extends LitElement {
     }
 
     .custom-select-search {
+      display:flex;
       padding: 8px;
       border-bottom: 1px solid #e9ecef;
     }
@@ -1163,27 +1168,26 @@ export class FilterPro extends LitElement {
             ${hasSuperFilterActive ? html`<span class="super-filter-badge">${superFilterSelections.length}</span>` : ''}
           </button>
           
-          <div class="filter-input-wrapper">
-            <div class="custom-select-wrapper ${isOpen ? 'open' : ''}">
-              <!-- Trigger button -->
-              <div
-                class="custom-select-trigger ${isOpen ? 'open' : ''}"
-                @click=${(e: Event) => {
-                  e.stopPropagation()
-                  if (isOpen) {
-                    this.customSelectOpen = null
-                  } else {
-                    this.customSelectOpen = filter.slug
-                    // Focus no input quando abrir
-                    setTimeout(() => {
-                      const input = this.shadowRoot?.querySelector(`#search-${filter.slug}`) as HTMLInputElement
-                      input?.focus()
-                    }, 50)
-                  }
-                }}
-              >
-                ${displayText}
-              </div>
+          <div class="custom-select-wrapper ${isOpen ? 'open' : ''}">
+            <!-- Trigger button -->
+            <div
+              class="custom-select-trigger ${isOpen ? 'open' : ''}"
+              @click=${(e: Event) => {
+                e.stopPropagation()
+                if (isOpen) {
+                  this.customSelectOpen = null
+                } else {
+                  this.customSelectOpen = filter.slug
+                  // Focus no input quando abrir
+                  setTimeout(() => {
+                    const input = this.shadowRoot?.querySelector(`#search-${filter.slug}`) as HTMLInputElement
+                    input?.focus()
+                  }, 50)
+                }
+              }}
+            >
+              ${displayText}
+            </div>
               
               <!-- Dropdown -->
               ${isOpen ? html`
@@ -1241,7 +1245,6 @@ export class FilterPro extends LitElement {
                   </div>
                 </div>
               ` : ''}
-            </div>
           </div>
         </div>
       </div>
