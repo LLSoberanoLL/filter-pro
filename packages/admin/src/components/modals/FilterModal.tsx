@@ -18,6 +18,7 @@ interface Filter {
   _id?: string
   projectKey: string
   slug: string
+  queryKey?: string
   name: string
   type: 'select' | 'multiselect' | 'range' | 'text'
   active: boolean
@@ -49,6 +50,7 @@ interface Filter {
 interface FilterFormData {
   projectKey: string
   slug: string
+  queryKey?: string
   name: string
   type: 'select' | 'multiselect' | 'range' | 'text'
   active: boolean
@@ -101,6 +103,7 @@ export function FilterModal({
   const [formData, setFormData] = useState<FilterFormData>({
     projectKey,
     slug: filter?.slug || '',
+    queryKey: filter?.queryKey || '',
     name: filter?.name || '',
     type: filter?.type || 'select',
     active: filter?.active ?? true,
@@ -239,6 +242,7 @@ export function FilterModal({
       setFormData({
         projectKey: filter.projectKey,
         slug: filter.slug,
+        queryKey: filter.queryKey || '',
         name: filter.name,
         type: filter.type,
         active: filter.active,
@@ -298,6 +302,7 @@ export function FilterModal({
       setFormData({
         projectKey,
         slug: '',
+        queryKey: '',
         name: '',
         type: 'select',
         active: true,
@@ -553,6 +558,35 @@ export function FilterModal({
               </div>
 
               <div>
+                <label className="block text-sm font-medium mb-1 flex items-center gap-1">
+                  Query Key
+                  <span 
+                    className="cursor-help text-blue-500 hover:text-blue-700" 
+                    title="Chave alternativa usada na query MongoDB. Se não preenchido, usa o slug. Útil quando o campo no banco tem nome diferente do filtro."
+                  >
+                    ⓘ
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Chave customizada para a query (ex: carrierExternalCodes). Opcional - se vazio, usa o slug.
+                </p>
+                <input
+                  type="text"
+                  value={formData.queryKey}
+                  onChange={(e) => setFormData({ ...formData, queryKey: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={`${formData.slug || 'slug'} (padrão)`}
+                />
+                {formData.queryKey && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ Query usará: <code className="bg-green-50 px-1 rounded">{formData.queryKey}</code>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div>
                 <label className="block text-sm font-medium mb-1">
                   Nome *
                 </label>
@@ -642,9 +676,9 @@ export function FilterModal({
                       className="mr-2"
                     />
                     <span className="text-sm">
-                      🔍 Habilitar Pesquisa
+                      ⚡ Ativar Super Filtro
                       <span className="block text-xs text-blue-700 font-normal">
-                        Adiciona uma barra de pesquisa para filtrar as opções
+                        Adiciona um botão para pré-filtrar as opções antes de selecionar
                       </span>
                     </span>
                   </label>

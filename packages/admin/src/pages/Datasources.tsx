@@ -13,6 +13,7 @@ export function Datasources() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingDatasource, setEditingDatasource] = useState<Datasource | undefined>()
+  const [cloningDatasource, setCloningDatasource] = useState<Datasource | undefined>()
   const [syncingDatasources, setSyncingDatasources] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -82,9 +83,31 @@ export function Datasources() {
     setIsModalOpen(true)
   }
 
+  const openCloneModal = (datasource: Datasource) => {
+    // Define o datasource sendo clonado
+    setCloningDatasource(datasource)
+    setEditingDatasource(undefined)
+    setIsModalOpen(true)
+  }
+
+  const handleCloneDatasource = async (datasourceData: DatasourceFormData) => {
+    if (!projectKey) return
+    
+    try {
+      // Usa os dados exatamente como o usuário editou no formulário
+      const response = await api.post(`/projects/${projectKey}/datasources`, datasourceData)
+      const newDatasource = await response.json()
+      setDatasources([...datasources, newDatasource])
+    } catch (error) {
+      console.error('Erro ao clonar datasource:', error)
+      throw error
+    }
+  }
+
   const closeModal = () => {
     setIsModalOpen(false)
     setEditingDatasource(undefined)
+    setCloningDatasource(undefined)
   }
 
   const getTypeLabel = (type: string) => {
@@ -317,6 +340,14 @@ export function Datasources() {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    onClick={() => openCloneModal(datasource)}
+                    className="text-blue-600 hover:text-blue-700 hover:border-blue-300"
+                  >
+                    📋 Clonar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={() => handleDeleteDatasource(datasource.id)}
                     className="text-red-600 hover:text-red-700 hover:border-red-300"
                   >
@@ -333,10 +364,23 @@ export function Datasources() {
       <DatasourceModal
         isOpen={isModalOpen}
         onClose={closeModal}
-        onSave={editingDatasource ? handleEditDatasource : handleCreateDatasource}
-        datasource={editingDatasource}
-        title={editingDatasource ? 'Editar Datasource' : 'Novo Datasource'}
+        onSave={
+          editingDatasource 
+            ? handleEditDatasource 
+            : cloningDatasource 
+              ? handleCloneDatasource 
+              : handleCreateDatasource
+        }
+        datasource={editingDatasource || cloningDatasource}
+        title={
+          editingDatasource 
+            ? 'Editar Datasource' 
+            : cloningDatasource 
+              ? 'Clonar Datasource' 
+              : 'Novo Datasource'
+        }
         projectKey={projectKey || ''}
+        isCloning={!!cloningDatasource}
       />
     </div>
   )

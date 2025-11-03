@@ -15,6 +15,7 @@ interface DatasourceModalProps {
   datasource?: Datasource
   title: string
   projectKey: string
+  isCloning?: boolean  // Indica se está clonando um datasource
 }
 
 export function DatasourceModal({
@@ -24,11 +25,12 @@ export function DatasourceModal({
   datasource,
   title,
   projectKey,
+  isCloning = false,
 }: DatasourceModalProps) {
   const [formData, setFormData] = useState<DatasourceFormData>({
     projectKey,
-    id: datasource?.id || '',
-    name: datasource?.name || '',
+    id: isCloning && datasource?.id ? `${datasource.id}-copy` : (datasource?.id || ''),
+    name: isCloning && datasource?.name ? `${datasource.name} (Cópia)` : (datasource?.name || ''),
     type: datasource?.type || 'rest_api',
     config: datasource?.config || ({
       baseUrl: '',
@@ -422,7 +424,7 @@ export function DatasourceModal({
                     errors.id ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="ex: products-api"
-                  disabled={!!datasource}
+                  disabled={!!datasource && !isCloning}
                 />
                 {errors.id && (
                   <p className="text-red-500 text-sm mt-1">{errors.id}</p>

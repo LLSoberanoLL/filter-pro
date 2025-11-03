@@ -17,7 +17,7 @@ export function ApiDocs() {
   const [showManual, setShowManual] = useState(false)
 
   const baseUrl = window.location.origin.replace(':5173', ':3001') + '/api'
-  const swaggerUrl = window.location.origin.replace(':5173', ':4000') + '/documentation'
+  const swaggerUrl = window.location.origin.replace(':3001', ':4000') + '/documentation'
   
   useEffect(() => {
     // Check if Swagger is available

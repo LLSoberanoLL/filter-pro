@@ -851,7 +851,7 @@ export class FilterPro extends LitElement {
   }
 
   // Super Filter Methods
-  private openSuperFilter(filterSlug: string) {
+  private async openSuperFilter(filterSlug: string) {
     this.superFilterOpen = filterSlug
     // Inicializar seleções se não existir
     if (!this.superFilterSelections[filterSlug]) {
@@ -859,6 +859,12 @@ export class FilterPro extends LitElement {
         ...this.superFilterSelections,
         [filterSlug]: []
       }
+    }
+    
+    // Carregar opções do filtro se ainda não foram carregadas
+    const filter = this.filters.find(f => f.slug === filterSlug)
+    if (filter) {
+      await this.loadOptionsForFilter(filter)
     }
   }
 
