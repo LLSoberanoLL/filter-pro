@@ -955,27 +955,67 @@ export class FilterPro extends LitElement {
     this.emitChange()
   }
 
-  private clearDependentCache(changedFilterSlug: string) {
+  private clearDependentCache(changedFilterSlug: string, processedSlugs: Set<string> = new Set()) {
+    // Evita processar o mesmo filtro múltiplas vezes (loops)
+    if (processedSlugs.has(changedFilterSlug)) {
+      console.log(`🔄 Já processado: ${changedFilterSlug}`)
+      return
+    }
+    processedSlugs.add(changedFilterSlug)
+    console.log(`🧹 Limpando cache de filtros dependentes de: ${changedFilterSlug}`)
+
     this.filters.forEach(filter => {
       const isDependent = filter.dependencies.some(dep => dep.filterSlug === changedFilterSlug && dep.mode === 'affected-by')
       if (isDependent) {
+        console.log(`  ↳ ${filter.slug} depende de ${changedFilterSlug} - limpando cache`)
         // Clear all cache entries for this filter
         Object.keys(this.optionsCache).forEach(key => {
           if (key.startsWith(filter.slug)) {
+            console.log(`    🗑️ Removendo cache: ${key}`)
             delete this.optionsCache[key]
           }
         })
+        
+        // Recursivamente limpa os filtros que dependem deste
+        this.clearDependentCache(filter.slug, processedSlugs)
       }
     })
   }
 
-  private async loadDependentOptions(changedFilterSlug: string) {
+  private async loadDependentOptions(changedFilterSlug: string, processedSlugs: Set<string> = new Set()) {
+    // Evita processar o mesmo filtro múltiplas vezes (loops)
+    if (processedSlugs.has(changedFilterSlug)) {
+      console.log(`🔄 Já carregado: ${changedFilterSlug}`)
+      return
+    }
+    processedSlugs.add(changedFilterSlug)
+    console.log(`📥 Carregando opções de filtros dependentes de: ${changedFilterSlug}`)
+
     const dependentFilters = this.filters.filter(filter =>
       filter.dependencies.some(dep => dep.filterSlug === changedFilterSlug && dep.mode === 'affected-by')
     )
 
+    console.log(`  → Encontrados ${dependentFilters.length} filtros dependentes: ${dependentFilters.map(f => f.slug).join(', ')}`)
+
     for (const filter of dependentFilters) {
+      console.log(`  ↳ Carregando opções de: ${filter.slug}`)
       await this.loadOptionsForFilter(filter)
+      
+      // PROPAGAÇÃO AUTOMÁTICA: Se o filtro carregado tem opções limitadas,
+      // passa automaticamente esses valores para os próximos dependentes
+      const loadedOptions = this.getFilterOptions(filter)
+      if (loadedOptions && loadedOptions.length > 0 && loadedOptions.length < 1000) {
+        console.log(`  🔗 Propagando ${loadedOptions.length} opções de ${filter.slug} para dependentes`)
+        
+        // Extrai os valores das opções carregadas
+        const propagatedValues = loadedOptions.map(opt => String(opt.value))
+        
+        // Atualiza o valor do filtro para incluir essas opções (sem emitir evento)
+        this.filterValues = { ...this.filterValues, [filter.slug]: propagatedValues }
+      }
+      
+      // Recursivamente carrega os filtros que dependem deste
+      await this.loadDependentOptions(filter.slug, processedSlugs)
     }
   }
 
@@ -1083,8 +1123,20 @@ export class FilterPro extends LitElement {
       : options
     
     // Encontra o label da opção selecionada
-    const selectedOption = options.find(opt => String(opt.value) === value)
-    const displayText = selectedOption ? selectedOption.label : 'Todos'
+    // Suporta tanto string quanto array (propagação automática)
+    let displayText = 'Todos'
+    if (value) {
+      if (Array.isArray(value)) {
+        // Se é array, mostrar quantidade de selecionados
+        displayText = value.length === 1 
+          ? options.find(opt => String(opt.value) === String(value[0]))?.label || `${value.length} selecionado`
+          : `${value.length} selecionados`
+      } else {
+        // Se é string, mostrar o label
+        const selectedOption = options.find(opt => String(opt.value) === String(value))
+        displayText = selectedOption ? selectedOption.label : 'Todos'
+      }
+    }
     
     return html`
       <div class="filter-group">
@@ -1154,7 +1206,7 @@ export class FilterPro extends LitElement {
                   <div class="custom-select-options">
                     <!-- Opção "Todos" -->
                     <div
-                      class="custom-select-option todos ${value === '' ? 'selected' : ''}"
+                      class="custom-select-option todos ${!value || value === '' || (Array.isArray(value) && value.length === 0) ? 'selected' : ''}"
                       @click=${() => {
                         // Se há super filtro ativo, "Todos" significa todos os filtrados
                         const valueToSend = hasSuperFilterActive ? superFilterSelections : ''
@@ -1167,9 +1219,15 @@ export class FilterPro extends LitElement {
                     </div>
                     
                     <!-- Opções filtradas -->
-                    ${filteredOptions.map(option => html`
+                    ${filteredOptions.map(option => {
+                      // Verifica se está selecionado (suporta string e array)
+                      const isSelected = Array.isArray(value)
+                        ? value.includes(String(option.value))
+                        : String(option.value) === String(value)
+                      
+                      return html`
                       <div
-                        class="custom-select-option ${String(option.value) === value ? 'selected' : ''}"
+                        class="custom-select-option ${isSelected ? 'selected' : ''}"
                         @click=${() => {
                           this.onFilterChange(filter.slug, String(option.value))
                           this.customSelectOpen = null
@@ -1178,7 +1236,8 @@ export class FilterPro extends LitElement {
                       >
                         ${option.label}
                       </div>
-                    `)}
+                    `
+                    })}
                     
                     ${filteredOptions.length === 0 ? html`
                       <div class="custom-select-option" style="text-align: center; color: #6c757d; font-style: italic;">
