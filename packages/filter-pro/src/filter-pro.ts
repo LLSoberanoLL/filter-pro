@@ -901,16 +901,19 @@ export class FilterPro extends LitElement {
   private applySuperFilter(filterSlug: string) {
     const selections = this.superFilterSelections[filterSlug] || []
     
-    // Super filtro apenas reduz as opções disponíveis no select
-    // Não envia valor final - o select principal faz isso
-    // Se nenhuma seleção, limpa o valor do filtro para "Todos"
+    // Quando aplica super filtro, atualiza a query imediatamente
+    // Se tem seleções, envia os valores selecionados
+    // Se não tem seleções (ou clicou em limpar), envia vazio (todos)
     if (selections.length === 0) {
+      // Sem seleções = limpa o filtro (todos os dados originais)
       this.onFilterChange(filterSlug, '')
+    } else {
+      // Com seleções = envia os valores selecionados para gerar a query
+      this.onFilterChange(filterSlug, selections)
     }
     
-    // Fecha o modal e atualiza o select com opções filtradas
+    // Fecha o modal
     this.closeSuperFilter()
-    this.requestUpdate()
   }
 
   private async onFilterChange(filterSlug: string, value: any) {
@@ -1113,7 +1116,9 @@ export class FilterPro extends LitElement {
                     <div
                       class="custom-select-option todos ${value === '' ? 'selected' : ''}"
                       @click=${() => {
-                        this.onFilterChange(filter.slug, '')
+                        // Se há super filtro ativo, "Todos" significa todos os filtrados
+                        const valueToSend = hasSuperFilterActive ? superFilterSelections : ''
+                        this.onFilterChange(filter.slug, valueToSend)
                         this.customSelectOpen = null
                         this.customSelectSearch = { ...this.customSelectSearch, [filter.slug]: '' }
                       }}
